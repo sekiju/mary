@@ -5,9 +5,10 @@ import (
 	"net/url"
 )
 
-type ParserDetails struct {
-	ID     string
-	Domain string
+type ReaderStorage struct {
+	ID      string
+	Domain  string
+	Session *string
 }
 
 type ImageFunction func() (image.Image, error)
@@ -23,7 +24,9 @@ func NewReaderImage(fn string, imf *ImageFunction) ReaderImage {
 	}
 }
 
-type Parser interface {
-	Details() ParserDetails
+type Reader interface {
+	Details() ReaderStorage
+	SetSession(str string)
+
 	Pages(uri url.URL, imageChan chan<- ReaderImage) error
 }

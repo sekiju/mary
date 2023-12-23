@@ -14,16 +14,30 @@ import (
 	"net/url"
 )
 
-type ComicWalker struct{}
+type ComicWalker struct {
+	Storage readers.ReaderStorage
+}
 
-func (c ComicWalker) Details() readers.ParserDetails {
-	return readers.ParserDetails{
-		ID:     "comic-walker",
-		Domain: "comic-walker.com",
+func New() *ComicWalker {
+	return &ComicWalker{
+		Storage: readers.ReaderStorage{
+			ID:     "comic-walker",
+			Domain: "comic-walker.com",
+		},
 	}
 }
 
-func (c ComicWalker) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
+func (c *ComicWalker) Details() readers.ReaderStorage {
+	return c.Storage
+}
+
+func (c *ComicWalker) SetSession(str string) {
+	c.Storage.Session = &str
+}
+
+func (c *ComicWalker) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
+	// todo: session support
+
 	if !uri.Query().Has("cid") {
 		return fmt.Errorf("url dont have cid")
 	}

@@ -9,6 +9,7 @@ import (
 	_ "image/png"
 	"io"
 	"net/http"
+	"net/http/cookiejar"
 )
 
 const defaultUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1"
@@ -18,19 +19,29 @@ var client = &http.Client{}
 type Config struct {
 	Headers map[string]string
 	Body    interface{}
+	Cookies []*http.Cookie
 }
 
-func newRequest(method, url string, body io.Reader, headers map[string]string) (*http.Request, error) {
+func init() {
+	jar, _ := cookiejar.New(nil)
+	client.Jar = jar
+}
+
+func newRequest(method, url string, body io.Reader, c Config) (*http.Request, error) {
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return req, err
 	}
 
 	req.Header.Add("User-Agent", defaultUserAgent)
-	if headers != nil {
-		for key, value := range headers {
+	if c.Headers != nil {
+		for key, value := range c.Headers {
 			req.Header.Add(key, value)
 		}
+	}
+
+	for _, cookie := range c.Cookies {
+		req.AddCookie(cookie)
 	}
 
 	return req, nil
@@ -93,7 +104,7 @@ func Get[T interface{}](url string, args *Config) (T, error) {
 		args = &Config{}
 	}
 
-	req, err := newRequest("GET", url, nil, args.Headers)
+	req, err := newRequest("GET", url, nil, *args)
 	if err != nil {
 		return r, err
 	}
@@ -122,7 +133,7 @@ func Post[T interface{}](url string, args *Config) (T, error) {
 		return r, err
 	}
 
-	req, err := newRequest("POST", url, bytes.NewBuffer(serialized), args.Headers)
+	req, err := newRequest("POST", url, bytes.NewBuffer(serialized), *args)
 	if err != nil {
 		return r, err
 	}

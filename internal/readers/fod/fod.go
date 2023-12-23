@@ -4,11 +4,9 @@ import (
 	"559/internal/readers"
 	"559/internal/utils"
 	"559/internal/utils/request"
-	"encoding/json"
 	"fmt"
 	"image"
 	"image/draw"
-	"io/ioutil"
 	"math"
 	"net/url"
 	"regexp"
@@ -17,18 +15,27 @@ import (
 )
 
 type Fod struct {
-	Session   string
-	DebugKeys bool
+	Storage readers.ReaderStorage
 }
 
-func (f Fod) Details() readers.ParserDetails {
-	return readers.ParserDetails{
-		ID:     "fod",
-		Domain: "manga.fod.fujitv.co.jp",
+func New() *Fod {
+	return &Fod{
+		Storage: readers.ReaderStorage{
+			ID:     "fod",
+			Domain: "manga.fod.fujitv.co.jp",
+		},
 	}
 }
 
-func (f Fod) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
+func (f *Fod) Details() readers.ReaderStorage {
+	return f.Storage
+}
+
+func (f *Fod) SetSession(str string) {
+	f.Storage.Session = &str
+}
+
+func (f *Fod) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 	bookId, episodeId, err := extractValuesFromURL(uri)
 	if err != nil {
 		return err
@@ -40,8 +47,8 @@ func (f Fod) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 		"zk-safe-search": "0",
 	}
 
-	if len(f.Session) > 0 {
-		headers["zk-session-key"] = f.Session
+	if f.Details().Session != nil {
+		headers["zk-session-key"] = *f.Details().Session
 	}
 
 	resp, err := request.Post[LicenceKeyResponse]("https://manga.fod.fujitv.co.jp/api/books/licenceKeyForBrowser", &request.Config{
@@ -76,11 +83,6 @@ func (f Fod) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 		}
 
 		imageChan <- readers.NewReaderImage(fnf.GetName(i, ".jpg"), &imageFunc)
-	}
-
-	if f.DebugKeys {
-		keys, _ := json.MarshalIndent(resp.GuardianInfoForBrowser.PagesData.Keys, "", " ")
-		_ = ioutil.WriteFile("./tests/images-keys.json", keys, 0644)
 	}
 
 	return nil
