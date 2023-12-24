@@ -47,8 +47,8 @@ func (f *Fod) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 		"zk-safe-search": "0",
 	}
 
-	session, exists := f.ctx.Data["session"]
-	if exists {
+	session, sessionExists := f.ctx.Data["session"]
+	if sessionExists {
 		headers["zk-session-key"] = session.(string)
 	}
 
@@ -61,6 +61,43 @@ func (f *Fod) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 	})
 	if err != nil {
 		return err
+	}
+
+	tryPurchaseBook, exists := f.ctx.Data["tryPurchaseBook"]
+	if sessionExists && exists && tryPurchaseBook.(bool) {
+		isFullVersion := strings.Contains(resp.GuardianInfoForBrowser.BookData.S3Key, "_001")
+		if !isFullVersion {
+			_, err := request.Post[interface{}]("https://manga.fod.fujitv.co.jp/api/purchase/buy", &request.Config{
+				Headers: headers,
+				Body: map[string]any{
+					"buy_type": 1,
+					"episodes": []map[string]any{
+						{
+							"episode_id":       episodeId,
+							"discounted_price": 0,
+							"cashback_point":   0,
+						},
+					},
+				},
+			})
+
+			if err != nil {
+				fmt.Println("Failed to purchase book")
+			} else {
+				fmt.Println("Purchase success")
+			}
+
+			resp, err = request.Post[LicenceKeyResponse]("https://manga.fod.fujitv.co.jp/api/books/licenceKeyForBrowser", &request.Config{
+				Headers: headers,
+				Body: map[string]string{
+					"book_id":    bookId,
+					"episode_id": episodeId,
+				},
+			})
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	saveOriginal, exists := f.ctx.Data["saveOriginal"]
