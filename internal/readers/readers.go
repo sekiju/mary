@@ -5,10 +5,9 @@ import (
 	"net/url"
 )
 
-type ReaderStorage struct {
-	ID      string
-	Domain  string
-	Session *string
+type ReaderContext struct {
+	Domain string
+	Data   map[string]any
 }
 
 type ImageFunction func() (image.Image, error)
@@ -25,8 +24,8 @@ func NewReaderImage(fn string, imf *ImageFunction) ReaderImage {
 }
 
 type Reader interface {
-	Details() ReaderStorage
-	SetSession(str string)
+	Context() ReaderContext
+	UpdateData(k string, v any)
 
 	Pages(uri url.URL, imageChan chan<- ReaderImage) error
 }

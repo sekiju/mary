@@ -15,24 +15,24 @@ import (
 )
 
 type Fod struct {
-	Storage readers.ReaderStorage
+	ctx readers.ReaderContext
 }
 
 func New() *Fod {
 	return &Fod{
-		Storage: readers.ReaderStorage{
-			ID:     "fod",
+		ctx: readers.ReaderContext{
 			Domain: "manga.fod.fujitv.co.jp",
+			Data:   map[string]any{},
 		},
 	}
 }
 
-func (f *Fod) Details() readers.ReaderStorage {
-	return f.Storage
+func (f *Fod) Context() readers.ReaderContext {
+	return f.ctx
 }
 
-func (f *Fod) SetSession(str string) {
-	f.Storage.Session = &str
+func (f *Fod) UpdateData(key string, value any) {
+	f.ctx.Data[key] = value
 }
 
 func (f *Fod) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
@@ -47,8 +47,9 @@ func (f *Fod) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 		"zk-safe-search": "0",
 	}
 
-	if f.Details().Session != nil {
-		headers["zk-session-key"] = *f.Details().Session
+	session, exists := f.ctx.Data["session"]
+	if exists {
+		headers["zk-session-key"] = session.(string)
 	}
 
 	resp, err := request.Post[LicenceKeyResponse]("https://manga.fod.fujitv.co.jp/api/books/licenceKeyForBrowser", &request.Config{
@@ -61,6 +62,8 @@ func (f *Fod) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 	if err != nil {
 		return err
 	}
+
+	saveOriginal, exists := f.ctx.Data["saveOriginal"]
 
 	fnf := utils.NewIndexNameFormatter(resp.GuardianInfoForBrowser.BookData.PageCount)
 	for i := 1; i <= resp.GuardianInfoForBrowser.BookData.PageCount; i++ {
@@ -77,6 +80,10 @@ func (f *Fod) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 			img, err := request.Get[image.Image](imageUrl, nil)
 			if err != nil {
 				return nil, err
+			}
+
+			if exists && saveOriginal.(bool) {
+				return img, nil
 			}
 
 			return descrambleImage(img, resp.GuardianInfoForBrowser.PagesData.Keys[currentIndex-1]), nil
@@ -126,7 +133,7 @@ func descrambleImage(img image.Image, key string) image.Image {
 }
 
 func extractValuesFromURL(uri url.URL) (string, string, error) {
-	pattern := `https://manga\.fod\.fujitv\.co\.jp/viewer/(\d+)/([A-Z0-9]+/)$`
+	pattern := `https://manga\.fod\.fujitv\.co\.jp/(viewer|books)/(\d+)(?:/([A-Z0-9]+))?`
 	re := regexp.MustCompile(pattern)
 	matches := re.FindStringSubmatch(uri.String())
 
@@ -134,10 +141,12 @@ func extractValuesFromURL(uri url.URL) (string, string, error) {
 		return "", "", fmt.Errorf("invalid URL format")
 	}
 
-	value1 := matches[1]
-	value2 := matches[2]
+	value1 := matches[2] // manga number
 
-	value2 = strings.ReplaceAll(value2, "/", "")
+	var value2 string
+	if len(matches) == 4 {
+		value2 = matches[3]
+	}
 
 	return value1, value2, nil
 }

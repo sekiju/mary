@@ -10,33 +10,36 @@ import (
 )
 
 type ShonenJumpPlus struct {
-	Storage readers.ReaderStorage
+	ctx readers.ReaderContext
 }
 
 func New() *ShonenJumpPlus {
 	return &ShonenJumpPlus{
-		Storage: readers.ReaderStorage{
-			ID:     "shonenjumpplus",
+		ctx: readers.ReaderContext{
 			Domain: "shonenjumpplus.com",
+			Data:   map[string]any{},
 		},
 	}
 }
 
-func (s *ShonenJumpPlus) Details() readers.ReaderStorage {
-	return s.Storage
+func (s *ShonenJumpPlus) Context() readers.ReaderContext {
+	return s.ctx
 }
 
-func (s *ShonenJumpPlus) SetSession(str string) {
-	s.Storage.Session = &str
+func (s *ShonenJumpPlus) UpdateData(k string, v any) {
+	s.ctx.Data[k] = v
 }
 
 func (s *ShonenJumpPlus) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 	var c = request.Config{}
-	if s.Storage.Session != nil {
+
+	session, exists := s.ctx.Data["session"]
+
+	if exists {
 		c.Cookies = []*http.Cookie{
 			{
 				Name:     "glsc",
-				Value:    *s.Storage.Session,
+				Value:    session.(string),
 				Path:     "/",
 				Domain:   "shonenjumpplus.com",
 				Secure:   true,

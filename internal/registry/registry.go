@@ -25,7 +25,7 @@ var Default = &ReadersRegistry{
 func (r *ReadersRegistry) Add(parser readers.Reader) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.parsers[parser.Details().ID] = parser
+	r.parsers[parser.Context().Domain] = parser
 }
 
 func (r *ReadersRegistry) All() []readers.Reader {
@@ -41,32 +41,15 @@ func (r *ReadersRegistry) All() []readers.Reader {
 	return v
 }
 
-func (r *ReadersRegistry) FindParserByID(id string) (readers.Reader, error) {
+func (r *ReadersRegistry) FindParserByDomain(domain string) (readers.Reader, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	parser, exists := r.parsers[id]
+	parser, exists := r.parsers[domain]
 	if !exists {
-		return parser, fmt.Errorf("unknown parser")
+		return parser, fmt.Errorf("unknown website")
 	}
 
 	return parser, nil
-}
-
-func (r *ReadersRegistry) FindParserByDomain(domain string) readers.Reader {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	for i := range r.parsers {
-		if r.parsers[i].Details().Domain == domain {
-			return r.parsers[i]
-		}
-	}
-
-	return nil
-}
-
-type ParserConfig struct {
-	Session string `json:"session"`
 }
 
 func init() {
@@ -76,20 +59,20 @@ func init() {
 
 	configFile, err := utils.ReadFile("settings.json")
 	if err == nil {
-		var config map[string]ParserConfig
+		var config map[string]map[string]any
 		err := json.Unmarshal(configFile, &config)
 		if err != nil {
 			fmt.Println("Error parsing JSON:", err)
 		}
 
-		for parserID, config := range config {
-			parser, err := Default.FindParserByID(parserID)
+		for parserID, cfg := range config {
+			parser, err := Default.FindParserByDomain(parserID)
 			if err != nil {
 				fmt.Println("Invalid parser in settings.json:", err)
 			}
 
-			if len(config.Session) > 0 {
-				parser.SetSession(config.Session)
+			for k, v := range cfg {
+				parser.UpdateData(k, v)
 			}
 		}
 	} else {

@@ -60,12 +60,12 @@ func run() error {
 		return err
 	}
 
-	reader := registry.Default.FindParserByDomain(uri.Hostname())
-	if reader == nil {
-		return fmt.Errorf("website not supported")
+	reader, err := registry.Default.FindParserByDomain(uri.Hostname())
+	if err != nil {
+		return err
 	}
 
-	fmt.Println(reader.Details().Domain)
+	fmt.Println(reader.Context().Domain)
 
 	imageChan := make(chan readers.ReaderImage)
 
