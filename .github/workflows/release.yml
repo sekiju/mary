@@ -19,7 +19,7 @@ jobs:
         exclude:
           - goarch: "386"
             goos: darwin
-          - goarch: arm64
+          - goarch: "arm64"
             goos: windows
     steps:
       - uses: actions/checkout@v3
@@ -29,5 +29,6 @@ jobs:
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
           asset_name: "559_${{ matrix.goos }}_${{ matrix.goarch }}"
-          md5sum: FALSE
-          compress_assets: FALSE
+          md5sum: false
+          compress_assets: false
+          project_path: "./cmd/559"
