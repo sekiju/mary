@@ -4,6 +4,7 @@ import (
 	"559/internal/readers"
 	"559/internal/readers/comic_walker"
 	"559/internal/readers/fod"
+	"559/internal/readers/pixiv"
 	"559/internal/readers/shonenjumpplus"
 	"559/internal/utils"
 	"encoding/json"
@@ -56,6 +57,7 @@ func init() {
 	Default.Add(fod.New())
 	Default.Add(shonenjumpplus.New())
 	Default.Add(comic_walker.New())
+	Default.Add(pixiv.New())
 
 	configFile, err := utils.ReadFile("settings.json")
 	if err == nil {
@@ -68,7 +70,8 @@ func init() {
 		for parserID, cfg := range config {
 			parser, err := Default.FindParserByDomain(parserID)
 			if err != nil {
-				fmt.Println("Invalid parser in settings.json:", err)
+				fmt.Printf("Unknown website %q in settings.json\n", parserID)
+				continue
 			}
 
 			for k, v := range cfg {

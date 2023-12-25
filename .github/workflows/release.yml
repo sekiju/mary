@@ -32,3 +32,4 @@ jobs:
           md5sum: false
           compress_assets: false
           project_path: "./cmd/559"
+          extra_files: README.md
