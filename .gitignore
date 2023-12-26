@@ -1,4 +1,8 @@
 .idea/
 tests/
+output/
 
 settings.json
+
+main.exe
+main
