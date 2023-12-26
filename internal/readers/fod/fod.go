@@ -60,7 +60,7 @@ func (f *Fod) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 		},
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to fetch episode: %s", err)
 	}
 
 	tryPurchaseBook, exists := f.ctx.Data["tryPurchaseBook"]
@@ -95,15 +95,18 @@ func (f *Fod) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 				},
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to fetch episode: %s", err)
 			}
 		}
 	}
 
+	fmt.Printf("total pages: %d\n", resp.GuardianInfoForBrowser.BookData.PageCount)
+	fmt.Println(resp.GuardianInfoForBrowser.PagesData.Keys)
+
 	saveOriginal, exists := f.ctx.Data["saveOriginal"]
 
 	fnf := utils.NewIndexNameFormatter(resp.GuardianInfoForBrowser.BookData.PageCount)
-	for i := 1; i <= resp.GuardianInfoForBrowser.BookData.PageCount; i++ {
+	for i := 1; i <= resp.GuardianInfoForBrowser.PagesData.End+1; i++ {
 		// info: memorize index
 		currentIndex := i
 
