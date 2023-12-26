@@ -42,7 +42,7 @@ func (f *Fod) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 	}
 
 	headers := map[string]string{
-		"zk-app-version": "1.1.24",
+		"zk-app-version": "1.1.25",
 		"zk-os-type":     "1",
 		"zk-safe-search": "0",
 	}
