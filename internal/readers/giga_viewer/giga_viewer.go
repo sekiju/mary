@@ -13,7 +13,7 @@ type GigaViewer struct {
 	ctx readers.ReaderContext
 }
 
-func TemplateNew(domain string) *GigaViewer {
+func New(domain string) *GigaViewer {
 	return &GigaViewer{
 		ctx: readers.ReaderContext{
 			Domain: domain,

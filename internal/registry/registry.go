@@ -54,8 +54,25 @@ func (r *ReadersRegistry) FindParserByDomain(domain string) (readers.Reader, err
 	return parser, nil
 }
 
+type TemplateNewFunc func(domain string) readers.Reader
+
+func (r *ReadersRegistry) MassiveAdd(tfunc TemplateNewFunc, domains []string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for _, domain := range domains {
+		reader := tfunc(domain)
+		r.parsers[reader.Context().Domain] = reader
+	}
+}
+
 func init() {
-	gigaViewerWebsites := []string{
+	Default.Add(fod.New())
+	Default.Add(comic_walker.New())
+	Default.Add(pixiv.New())
+	Default.MassiveAdd(func(domain string) readers.Reader {
+		return giga_viewer.New(domain)
+	}, []string{
 		"shonenjumpplus.com",
 		"pocket.shonenmagazine.com",
 		"comic-action.com",
@@ -71,14 +88,7 @@ func init() {
 		"tonarinoyj.jp",
 		"viewer.heros-web.com",
 		"www.sunday-webry.com",
-	}
-
-	Default.Add(fod.New())
-	Default.Add(comic_walker.New())
-	Default.Add(pixiv.New())
-	for _, domain := range gigaViewerWebsites {
-		Default.Add(giga_viewer.TemplateNew(domain))
-	}
+	})
 
 	configFile, err := utils.ReadFile("settings.json")
 	if err == nil {
