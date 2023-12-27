@@ -34,15 +34,15 @@
 
 ## Настройки
 
-У некоторых парсеров есть настройки, они получаются из `settings.json` в формате ключ/объект. Где ключ — ID парсера, а
+У некоторых парсеров есть настройки, они получаются из `settings.json` в формате ключ/объект. Где ключ — ID/домен парсера, а
 объект — объект:
 
 ```json
 {
-  "shonenjumpplus": {
+  "shonenjumpplus.com": {
     "session": "ISqIN0B2M7zQSf7loxZhxCeC7l23nD2ckV"
   },
-  "fod": {
+  "manga.fod.fujitv.co.jp": {
     "session": "YKt0Ab66gxMxqgvtRXx5takTSuz4np",
     "saveOriginal": false,
     "tryPurchaseBook": false
