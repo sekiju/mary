@@ -4,8 +4,8 @@ import (
 	"559/internal/readers"
 	"559/internal/readers/comic_walker"
 	"559/internal/readers/fod"
+	"559/internal/readers/giga_viewer"
 	"559/internal/readers/pixiv"
-	"559/internal/readers/shonenjumpplus"
 	"559/internal/utils"
 	"encoding/json"
 	"fmt"
@@ -23,10 +23,11 @@ var Default = &ReadersRegistry{
 	parsers: make(map[string]readers.Reader),
 }
 
-func (r *ReadersRegistry) Add(parser readers.Reader) {
+func (r *ReadersRegistry) Add(arg readers.Reader) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.parsers[parser.Context().Domain] = parser
+
+	r.parsers[arg.Context().Domain] = arg
 }
 
 func (r *ReadersRegistry) All() []readers.Reader {
@@ -54,10 +55,30 @@ func (r *ReadersRegistry) FindParserByDomain(domain string) (readers.Reader, err
 }
 
 func init() {
+	gigaViewerWebsites := []string{
+		"shonenjumpplus.com",
+		"pocket.shonenmagazine.com",
+		"comic-action.com",
+		"comic-days.com",
+		"comic-growl.com",
+		"comic-earthstar.com",
+		"comic-gardo.com",
+		"comic-trail.com",
+		"comic-zenon.com",
+		"comicborder.com",
+		"kuragebunch.com",
+		"magcomi.com",
+		"tonarinoyj.jp",
+		"viewer.heros-web.com",
+		"www.sunday-webry.com",
+	}
+
 	Default.Add(fod.New())
-	Default.Add(shonenjumpplus.New())
 	Default.Add(comic_walker.New())
 	Default.Add(pixiv.New())
+	for _, domain := range gigaViewerWebsites {
+		Default.Add(giga_viewer.TemplateNew(domain))
+	}
 
 	configFile, err := utils.ReadFile("settings.json")
 	if err == nil {

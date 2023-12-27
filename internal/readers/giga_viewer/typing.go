@@ -1,8 +1,8 @@
-package shonenjumpplus
+package giga_viewer
 
 import "time"
 
-type ShonenJumpPlusResponse struct {
+type EpisodeResponse struct {
 	ReadableProduct struct {
 		FinishReadingNotificationUri interface{} `json:"finishReadingNotificationUri"`
 		HasPurchased                 bool        `json:"hasPurchased"`

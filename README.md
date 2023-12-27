@@ -13,10 +13,24 @@
 
 ## Сайты
 
-* [manga.fod.fujitv.co.jp](https://manga.fod.fujitv.co.jp/)
-* [shonenjumpplus.com](https://shonenjumpplus.com/)
-* [comic-walker.com](https://comic-walker.com/) _(без авторизации)_
-* [www.pixiv.net](https://www.pixiv.net/)
+- [manga.fod.fujitv.co.jp](https://manga.fod.fujitv.co.jp/)
+- [shonenjumpplus.com](https://shonenjumpplus.com/)
+- [comic-walker.com](https://comic-walker.com/) _(без авторизации)_
+- [www.pixiv.net](https://www.pixiv.net/)
+- [pocket.shonenmagazine.com](https://pocket.shonenmagazine.com)
+- [comic-action.com](https://comic-action.com)
+- [comic-days.com](https://comic-days.com)
+- [comic-growl.com](https://comic-growl.com)
+- [comic-earthstar.com](https://comic-earthstar.com)
+- [comic-gardo.com](https://comic-gardo.com)
+- [comic-trail.com](https://comic-trail.com)
+- [comic-zenon.com](https://comic-zenon.com)
+- [comicborder.com](https://comicborder.com)
+- [kuragebunch.com](https://kuragebunch.com)
+- [magcomi.com](https://magcomi.com)
+- [tonarinoyj.jp](https://tonarinoyj.jp)
+- [viewer.heros-web.com](https://viewer.heros-web.com)
+- [www.sunday-webry.com](https://www.sunday-webry.com)
 
 ## Настройки
 

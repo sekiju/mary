@@ -1,4 +1,4 @@
-package shonenjumpplus
+package giga_viewer
 
 import (
 	"559/internal/readers"
@@ -9,31 +9,31 @@ import (
 	"net/url"
 )
 
-type ShonenJumpPlus struct {
+type GigaViewer struct {
 	ctx readers.ReaderContext
 }
 
-func New() *ShonenJumpPlus {
-	return &ShonenJumpPlus{
+func TemplateNew(domain string) *GigaViewer {
+	return &GigaViewer{
 		ctx: readers.ReaderContext{
-			Domain: "shonenjumpplus.com",
+			Domain: domain,
 			Data:   map[string]any{},
 		},
 	}
 }
 
-func (s *ShonenJumpPlus) Context() readers.ReaderContext {
-	return s.ctx
+func (g *GigaViewer) Context() readers.ReaderContext {
+	return g.ctx
 }
 
-func (s *ShonenJumpPlus) UpdateData(k string, v any) {
-	s.ctx.Data[k] = v
+func (g *GigaViewer) UpdateData(k string, v any) {
+	g.ctx.Data[k] = v
 }
 
-func (s *ShonenJumpPlus) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
+func (g *GigaViewer) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 	var c = request.Config{}
 
-	session, exists := s.ctx.Data["session"]
+	session, exists := g.ctx.Data["session"]
 
 	if exists {
 		c.Cookies = []*http.Cookie{
@@ -41,14 +41,14 @@ func (s *ShonenJumpPlus) Pages(uri url.URL, imageChan chan<- readers.ReaderImage
 				Name:     "glsc",
 				Value:    session.(string),
 				Path:     "/",
-				Domain:   "shonenjumpplus.com",
+				Domain:   g.ctx.Domain,
 				Secure:   true,
 				HttpOnly: true,
 			},
 		}
 	}
 
-	resp, err := request.Get[ShonenJumpPlusResponse](uri.String()+".json", &c)
+	resp, err := request.Get[EpisodeResponse](uri.String()+".json", &c)
 	if err != nil {
 		return err
 	}
