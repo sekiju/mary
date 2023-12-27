@@ -4,9 +4,12 @@ import (
 	"559/internal/readers"
 	"559/internal/utils"
 	"559/internal/utils/request"
+	"encoding/json"
 	"fmt"
 	"image"
 	"image/draw"
+	"io/ioutil"
+	"log"
 	"math"
 	"net/url"
 	"regexp"
@@ -100,13 +103,10 @@ func (f *Fod) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 		}
 	}
 
-	fmt.Printf("total pages: %d\n", resp.GuardianInfoForBrowser.BookData.PageCount)
-	fmt.Println(resp.GuardianInfoForBrowser.PagesData.Keys)
-
 	saveOriginal, exists := f.ctx.Data["saveOriginal"]
 
 	fnf := utils.NewIndexNameFormatter(resp.GuardianInfoForBrowser.BookData.PageCount)
-	for i := 1; i <= resp.GuardianInfoForBrowser.PagesData.End+1; i++ {
+	for i := 1; i <= resp.GuardianInfoAll.DataForBrowser.PageCount; i++ {
 		// info: memorize index
 		currentIndex := i
 
@@ -126,10 +126,54 @@ func (f *Fod) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 				return img, nil
 			}
 
-			return descrambleImage(img, resp.GuardianInfoForBrowser.PagesData.Keys[currentIndex-1]), nil
+			return descrambleImage(img, resp.GuardianInfoAll.KeysForBrowser[currentIndex-1]), nil
 		}
 
 		imageChan <- readers.NewReaderImage(fnf.GetName(i, ".jpg"), &imageFunc)
+	}
+
+	if exists && saveOriginal.(bool) {
+		imageUrl, err := cleanURL(resp.GuardianInfoForBrowser.GUARDIANSERVER + normalizeUrl(resp.GuardianInfoForBrowser.BookData.S3Key) + strconv.Itoa(1) + ".jpg?" + resp.GuardianInfoForBrowser.ADDITIONALQUERYSTRING)
+		if err != nil {
+			return err
+		}
+
+		img, err := request.Get[image.Image](imageUrl, nil)
+		if err != nil {
+			return err
+		}
+
+		wi, hi := img.Bounds().Size().X, img.Bounds().Size().Y
+
+		byteKeys := make([][]int, len(resp.GuardianInfoAll.KeysForBrowser))
+
+		for i, key := range resp.GuardianInfoAll.KeysForBrowser {
+			m := int(math.Floor(float64(wi / 96)))
+			o := m * int(math.Floor(float64(hi/128)))
+
+			s := make([]int, o)
+			for a := 0; a < o; a++ {
+				s[a] = a
+			}
+
+			s = NewRandomizer(key).Shuffle(s)
+
+			byteKeys[i] = s
+		}
+
+		jsonData, err := json.Marshal(byteKeys)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		filePath := "output/keys.json"
+
+		err = ioutil.WriteFile(filePath, jsonData, 0644)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Printf("Data written to %s\n", filePath)
 	}
 
 	return nil
