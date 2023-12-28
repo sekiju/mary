@@ -6,6 +6,7 @@ import (
 	"559/internal/readers/fod"
 	"559/internal/readers/giga_viewer"
 	"559/internal/readers/pixiv"
+	"559/internal/readers/takeshobo"
 	"559/internal/utils"
 	"encoding/json"
 	"fmt"
@@ -91,6 +92,7 @@ func init() {
 	for _, domain := range gigaViewerWebsites {
 		Default.Add(giga_viewer.New(domain))
 	}
+	Default.Add(takeshobo.New())
 
 	configFile, err := utils.ReadFile("settings.json")
 	if err == nil {

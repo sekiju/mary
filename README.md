@@ -31,6 +31,7 @@
 - [tonarinoyj.jp](https://tonarinoyj.jp)
 - [viewer.heros-web.com](https://viewer.heros-web.com)
 - [www.sunday-webry.com](https://www.sunday-webry.com)
+- [storia.takeshobo.co.jp](https://storia.takeshobo.co.jp)
 
 ## Настройки
 
