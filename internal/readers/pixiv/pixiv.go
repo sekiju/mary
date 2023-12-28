@@ -12,22 +12,24 @@ import (
 )
 
 type Pixiv struct {
-	ctx readers.ReaderContext
+	*readers.Base
 }
 
-func (p *Pixiv) Context() readers.ReaderContext {
-	return p.ctx
+func New() *Pixiv {
+	return &Pixiv{
+		Base: readers.NewBase("www.pixiv.net"),
+	}
 }
 
-func (p *Pixiv) UpdateData(k string, v any) {
-	p.ctx.Data[k] = v
+func (p *Pixiv) Context() *readers.Base {
+	return p.Base
 }
 
 func (p *Pixiv) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 	lastPart := path.Base(uri.Path)
 
 	var httpConfig request.Config
-	session, exists := p.ctx.Data["session"]
+	session, exists := p.Data["session"]
 	if exists {
 		httpConfig.Cookies = []*http.Cookie{
 			{
@@ -61,13 +63,4 @@ func (p *Pixiv) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 	}
 
 	return nil
-}
-
-func New() *Pixiv {
-	return &Pixiv{
-		ctx: readers.ReaderContext{
-			Domain: "www.pixiv.net",
-			Data:   map[string]any{},
-		},
-	}
 }

@@ -60,7 +60,7 @@ func run() error {
 		return err
 	}
 
-	reader, err := registry.Default.FindParserByDomain(uri.Hostname())
+	reader, err := registry.Default.FindReaderByDomain(uri.Hostname())
 	if err != nil {
 		return err
 	}

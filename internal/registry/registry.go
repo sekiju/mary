@@ -12,41 +12,39 @@ import (
 	"sync"
 )
 
-// todo: exception for unsupported website
-
 type ReadersRegistry struct {
-	parsers map[string]readers.Reader
+	readers map[string]readers.Reader
 	mu      sync.RWMutex
 }
 
 var Default = &ReadersRegistry{
-	parsers: make(map[string]readers.Reader),
+	readers: make(map[string]readers.Reader),
 }
 
-func (r *ReadersRegistry) Add(arg readers.Reader) {
+func (r *ReadersRegistry) Add(n readers.Reader) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	r.parsers[arg.Context().Domain] = arg
+	r.readers[n.Context().Domain] = n
 }
 
 func (r *ReadersRegistry) All() []readers.Reader {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	v := make([]readers.Reader, 0, len(r.parsers))
-
-	for _, value := range r.parsers {
+	v := make([]readers.Reader, len(r.readers))
+	for _, value := range r.readers {
 		v = append(v, value)
 	}
 
 	return v
 }
 
-func (r *ReadersRegistry) FindParserByDomain(domain string) (readers.Reader, error) {
+func (r *ReadersRegistry) FindReaderByDomain(domain string) (readers.Reader, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	parser, exists := r.parsers[domain]
+
+	parser, exists := r.readers[domain]
 	if !exists {
 		return parser, fmt.Errorf("unknown website")
 	}
@@ -54,25 +52,26 @@ func (r *ReadersRegistry) FindParserByDomain(domain string) (readers.Reader, err
 	return parser, nil
 }
 
-type TemplateNewFunc func(domain string) readers.Reader
+//type TemplateNewFunc func(domain string) readers.Reader
 
-func (r *ReadersRegistry) MassiveAdd(tfunc TemplateNewFunc, domains []string) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+//func (r *ReadersRegistry) MassiveAdd(tfunc TemplateNewFunc, domains []string) {
+//	r.mu.Lock()
+//	defer r.mu.Unlock()
+//
+//	for _, domain := range domains {
+//		reader := tfunc(domain)
+//		r.readers[reader.Domain()] = reader
+//	}
+//}
 
-	for _, domain := range domains {
-		reader := tfunc(domain)
-		r.parsers[reader.Context().Domain] = reader
-	}
-}
+type Config map[string]map[string]interface{}
 
 func init() {
 	Default.Add(fod.New())
 	Default.Add(comic_walker.New())
 	Default.Add(pixiv.New())
-	Default.MassiveAdd(func(domain string) readers.Reader {
-		return giga_viewer.New(domain)
-	}, []string{
+
+	gigaViewerWebsites := []string{
 		"shonenjumpplus.com",
 		"pocket.shonenmagazine.com",
 		"comic-action.com",
@@ -88,25 +87,28 @@ func init() {
 		"tonarinoyj.jp",
 		"viewer.heros-web.com",
 		"www.sunday-webry.com",
-	})
+	}
+	for _, domain := range gigaViewerWebsites {
+		Default.Add(giga_viewer.New(domain))
+	}
 
 	configFile, err := utils.ReadFile("settings.json")
 	if err == nil {
-		var config map[string]map[string]any
+		var config Config
 		err := json.Unmarshal(configFile, &config)
 		if err != nil {
 			fmt.Println("Error parsing JSON:", err)
 		}
 
-		for parserID, cfg := range config {
-			parser, err := Default.FindParserByDomain(parserID)
+		for domain, cfg := range config {
+			r, err := Default.FindReaderByDomain(domain)
 			if err != nil {
-				fmt.Printf("Unknown website %q in settings.json\n", parserID)
+				fmt.Printf("Unknown website %q in settings.json\n", domain)
 				continue
 			}
 
 			for k, v := range cfg {
-				parser.UpdateData(k, v)
+				r.Context().Data[k] = v
 			}
 		}
 	} else {

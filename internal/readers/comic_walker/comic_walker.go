@@ -15,24 +15,17 @@ import (
 )
 
 type ComicWalker struct {
-	ctx readers.ReaderContext
+	*readers.Base
 }
 
 func New() *ComicWalker {
 	return &ComicWalker{
-		ctx: readers.ReaderContext{
-			Domain: "comic-walker.com",
-			Data:   map[string]any{},
-		},
+		Base: readers.NewBase("comic-walker.com"),
 	}
 }
 
-func (c *ComicWalker) Context() readers.ReaderContext {
-	return c.ctx
-}
-
-func (c *ComicWalker) UpdateData(key string, value any) {
-	c.ctx.Data[key] = value
+func (c *ComicWalker) Context() *readers.Base {
+	return c.Base
 }
 
 func (c *ComicWalker) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {

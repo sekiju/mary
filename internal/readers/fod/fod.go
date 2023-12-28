@@ -18,24 +18,17 @@ import (
 )
 
 type Fod struct {
-	ctx readers.ReaderContext
+	*readers.Base
 }
 
 func New() *Fod {
 	return &Fod{
-		ctx: readers.ReaderContext{
-			Domain: "manga.fod.fujitv.co.jp",
-			Data:   map[string]any{},
-		},
+		Base: readers.NewBase("manga.fod.fujitv.co.jp"),
 	}
 }
 
-func (f *Fod) Context() readers.ReaderContext {
-	return f.ctx
-}
-
-func (f *Fod) UpdateData(key string, value any) {
-	f.ctx.Data[key] = value
+func (f *Fod) Context() *readers.Base {
+	return f.Base
 }
 
 func (f *Fod) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
@@ -50,7 +43,7 @@ func (f *Fod) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 		"zk-safe-search": "0",
 	}
 
-	session, sessionExists := f.ctx.Data["session"]
+	session, sessionExists := f.Data["session"]
 	if sessionExists {
 		headers["zk-session-key"] = session.(string)
 	}
@@ -66,7 +59,7 @@ func (f *Fod) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 		return fmt.Errorf("failed to fetch episode: %s", err)
 	}
 
-	tryPurchaseBook, exists := f.ctx.Data["tryPurchaseBook"]
+	tryPurchaseBook, exists := f.Data["tryPurchaseBook"]
 	if sessionExists && exists && tryPurchaseBook.(bool) {
 		isFullVersion := strings.Contains(resp.GuardianInfoForBrowser.BookData.S3Key, "_001")
 		if !isFullVersion {
@@ -103,7 +96,7 @@ func (f *Fod) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 		}
 	}
 
-	saveOriginal, exists := f.ctx.Data["saveOriginal"]
+	saveOriginal, exists := f.Data["saveOriginal"]
 
 	fnf := utils.NewIndexNameFormatter(resp.GuardianInfoForBrowser.BookData.PageCount)
 	for i := 1; i <= resp.GuardianInfoAll.DataForBrowser.PageCount; i++ {

@@ -10,30 +10,21 @@ import (
 )
 
 type GigaViewer struct {
-	ctx readers.ReaderContext
+	*readers.Base
 }
 
 func New(domain string) *GigaViewer {
-	return &GigaViewer{
-		ctx: readers.ReaderContext{
-			Domain: domain,
-			Data:   map[string]any{},
-		},
-	}
+	return &GigaViewer{Base: readers.NewBase(domain)}
 }
 
-func (g *GigaViewer) Context() readers.ReaderContext {
-	return g.ctx
-}
-
-func (g *GigaViewer) UpdateData(k string, v any) {
-	g.ctx.Data[k] = v
+func (g *GigaViewer) Context() *readers.Base {
+	return g.Base
 }
 
 func (g *GigaViewer) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 	var c = request.Config{}
 
-	session, exists := g.ctx.Data["session"]
+	session, exists := g.Data["session"]
 
 	if exists {
 		c.Cookies = []*http.Cookie{
@@ -41,7 +32,7 @@ func (g *GigaViewer) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) er
 				Name:     "glsc",
 				Value:    session.(string),
 				Path:     "/",
-				Domain:   g.ctx.Domain,
+				Domain:   g.Domain,
 				Secure:   true,
 				HttpOnly: true,
 			},

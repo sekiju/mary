@@ -12,26 +12,19 @@ import (
  */
 
 type BookWalker struct {
-	ctx readers.ReaderContext
+	*readers.Base
 }
 
 func New() *BookWalker {
 	return &BookWalker{
-		ctx: readers.ReaderContext{
-			Domain: "bookwalker.jp",
-			Data:   map[string]any{},
-		},
+		Base: readers.NewBase("bookwalker.jp"),
 	}
 }
 
-func (c *BookWalker) Context() readers.ReaderContext {
-	return c.ctx
+func (b *BookWalker) Context() *readers.Base {
+	return b.Base
 }
 
-func (c *BookWalker) UpdateData(key string, value any) {
-	c.ctx.Data[key] = value
-}
-
-func (c *BookWalker) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
+func (b *BookWalker) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
 	return nil
 }

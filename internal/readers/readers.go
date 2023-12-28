@@ -5,9 +5,16 @@ import (
 	"net/url"
 )
 
-type ReaderContext struct {
+type Base struct {
 	Domain string
 	Data   map[string]any
+}
+
+func NewBase(domain string) *Base {
+	return &Base{
+		Domain: domain,
+		Data:   map[string]any{},
+	}
 }
 
 type ImageFunction func() (image.Image, error)
@@ -24,8 +31,6 @@ func NewReaderImage(fn string, imf *ImageFunction) ReaderImage {
 }
 
 type Reader interface {
-	Context() ReaderContext
-	UpdateData(k string, v any)
-
+	Context() *Base
 	Pages(uri url.URL, imageChan chan<- ReaderImage) error
 }
