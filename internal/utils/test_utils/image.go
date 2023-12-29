@@ -1,7 +1,7 @@
 package test_utils
 
 import (
-	"559/internal/readers"
+	"559/internal/connectors"
 	"github.com/corona10/goimagehash"
 	"image"
 	_ "image/jpeg"
@@ -17,7 +17,7 @@ import (
 	"testing"
 )
 
-func ReaderTest(t *testing.T, r readers.Reader, assetPath, assetUrl, chapterUrl string) {
+func ReaderTest(t *testing.T, r connectors.Connector, assetPath, assetUrl, chapterUrl string) {
 	restore := RootFolder(t)
 	defer restore()
 
@@ -31,7 +31,7 @@ func ReaderTest(t *testing.T, r readers.Reader, assetPath, assetUrl, chapterUrl 
 		t.Fatal(err)
 	}
 
-	imageChan := make(chan readers.ReaderImage)
+	imageChan := make(chan connectors.ReaderImage)
 
 	go func() {
 		defer close(imageChan)

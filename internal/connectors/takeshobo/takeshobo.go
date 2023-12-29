@@ -1,9 +1,9 @@
 package takeshobo
 
 import (
-	"559/internal/readers"
+	"559/internal/connectors"
 	"559/internal/utils"
-	"559/internal/utils/request"
+	"559/pkg/request"
 	"github.com/PuerkitoBio/goquery"
 	"image"
 	"image/draw"
@@ -12,19 +12,19 @@ import (
 	"strconv"
 )
 
-type Takeshobo struct {
-	*readers.Base
+type StoriaTakeshobo struct {
+	*connectors.Base
 }
 
-func New() *Takeshobo {
-	return &Takeshobo{Base: readers.NewBase("storia.takeshobo.co.jp")}
+func New() *StoriaTakeshobo {
+	return &StoriaTakeshobo{Base: connectors.NewBase("storia.takeshobo.co.jp")}
 }
 
-func (t *Takeshobo) Context() *readers.Base {
+func (t *StoriaTakeshobo) Context() *connectors.Base {
 	return t.Base
 }
 
-func (t *Takeshobo) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
+func (t *StoriaTakeshobo) Pages(uri url.URL, imageChan chan<- connectors.ReaderImage) error {
 	doc, err := request.GetDocument(uri.String(), nil)
 	if err != nil {
 		return err
@@ -38,28 +38,31 @@ func (t *Takeshobo) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) err
 
 	fnf := utils.NewIndexNameFormatter(len(pages))
 	for i := 0; i < len(pages); i++ {
-		// info: memorize
-		currentIndex := i
-
-		var imageFunc readers.ImageFunction
-		imageFunc = func() (image.Image, error) {
-			ptimg, err := request.Get[Ptimg](request.JoinURL(uri.String(), pages[currentIndex]), nil)
-			if err != nil {
-				return nil, err
-			}
-
-			img, err := request.Get[image.Image](request.JoinURL(uri.String(), "data", ptimg.Resources.I.Src), nil)
-			if err != nil {
-				return nil, err
-			}
-
-			return descrambleImage(img, ptimg.Views), nil
-		}
-
-		imageChan <- readers.NewReaderImage(fnf.GetName(i, ".jpg"), &imageFunc)
+		processPage(uri, pages[i], fnf.GetName(i, ".jpg"), imageChan)
 	}
 
+	close(imageChan)
+
 	return nil
+}
+
+func processPage(uri url.URL, page string, fileName string, imageChan chan<- connectors.ReaderImage) {
+	var fn connectors.ImageFunction
+	fn = func() (image.Image, error) {
+		ptimg, err := request.Get[Ptimg](request.JoinURL(uri.String(), page), nil)
+		if err != nil {
+			return nil, err
+		}
+
+		img, err := request.Get[image.Image](request.JoinURL(uri.String(), "data", ptimg.Resources.I.Src), nil)
+		if err != nil {
+			return nil, err
+		}
+
+		return descrambleImage(img, ptimg.Views), nil
+	}
+
+	imageChan <- connectors.NewConnectorImage(fileName, &fn)
 }
 
 func descrambleImage(img image.Image, views []PtimgView) image.Image {

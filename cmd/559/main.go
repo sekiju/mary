@@ -1,61 +1,40 @@
 package main
 
 import (
-	"559/internal/readers"
+	"559/internal/config"
+	"559/internal/connectors"
 	"559/internal/registry"
 	"fmt"
-	validation "github.com/go-ozzo/ozzo-validation"
-	"github.com/spf13/cobra"
 	"image/jpeg"
 	"image/png"
 	"net/url"
 	"os"
 	"path/filepath"
+	"sync"
+	"time"
 )
 
 func main() {
-	root.Execute()
-}
+	err := run()
+	if err != nil {
+		fmt.Print(err)
+		os.Exit(1)
+	}
 
-type Settings struct {
-	OutputPath         string `json:"output_path"`
-	Url                string `json:"url"`
-	ClearPreviousFiles bool   `json:"clear_folder"`
-}
-
-func (s Settings) Validate() error {
-	return validation.ValidateStruct(&s,
-		validation.Field(&s.OutputPath),
-		validation.Field(&s.Url, validation.Required),
-		validation.Field(&s.ClearPreviousFiles),
-	)
-}
-
-var s = Settings{}
-var root = &cobra.Command{
-	Use: "559",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) > 0 {
-			s.Url = args[0]
-		} else {
-			return fmt.Errorf("url: cannot be blank, usage: 559.exe https://shonenjumpplus.com/episode/14079602755570530203")
-		}
-
-		if err := s.Validate(); err != nil {
-			return err
-		}
-
-		return run()
-	},
-}
-
-func init() {
-	root.Flags().StringVarP(&s.OutputPath, "output", "o", "output", "Output folder")
-	root.Flags().BoolVar(&s.ClearPreviousFiles, "clear-files", true, "Clear files in output folder")
+	os.Exit(0)
 }
 
 func run() error {
-	uri, err := url.Parse(s.Url)
+	if len(os.Args) < 2 {
+		return fmt.Errorf("usage: 559 <url to chapter viewer>")
+	}
+
+	cfg, err := config.Load()
+	if err != nil {
+		return err
+	}
+
+	uri, err := url.Parse(os.Args[1])
 	if err != nil {
 		return err
 	}
@@ -65,13 +44,20 @@ func run() error {
 		return err
 	}
 
-	fmt.Println(reader.Context().Domain)
+	fmt.Println(reader.Context().Domain, " | ", fmt.Sprintf("threads: %d", cfg.Settings.Threads))
 
-	imageChan := make(chan readers.ReaderImage)
+	startTime := time.Now()
+	imageChan := make(chan connectors.ReaderImage)
+	wg := &sync.WaitGroup{}
+
+	if cfg.Settings.ClearOutputFolder {
+		err := os.RemoveAll(cfg.Settings.OutputPath)
+		if err != nil {
+			return err
+		}
+	}
 
 	go func() {
-		defer close(imageChan)
-
 		err = reader.Pages(*uri, imageChan)
 		if err != nil {
 			fmt.Println(err)
@@ -79,30 +65,40 @@ func run() error {
 		}
 	}()
 
-	if s.ClearPreviousFiles {
-		err := os.RemoveAll(s.OutputPath)
-		if err != nil {
-			return err
-		}
-	}
-
-	err = os.MkdirAll(s.OutputPath, os.ModePerm)
+	err = os.MkdirAll(cfg.Settings.OutputPath, os.ModePerm)
 	if err != nil {
 		return err
 	}
 
-	for page := range imageChan {
-		file, err := os.Create(filepath.Join(s.OutputPath, page.FileName))
+	for i := 0; i < int(cfg.Settings.Threads); i++ {
+		wg.Add(1)
+		go func() {
+			err := worker(cfg.Settings.OutputPath, imageChan, wg)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	elapsedTime := time.Since(startTime)
+	fmt.Printf("Elapsed time %v+\n", elapsedTime)
+
+	return nil
+}
+
+func worker(outputPath string, imageChan <-chan connectors.ReaderImage, wg *sync.WaitGroup) error {
+	for i := range imageChan {
+		file, err := os.Create(filepath.Join(outputPath, i.FileName))
 		if err != nil {
 			return fmt.Errorf("failed to create file: %s", err)
 		}
 
-		img, err := page.Image()
-		if err != nil {
-			return fmt.Errorf("failed to get image: %s", err)
-		}
+		img, err := i.Image()
 
-		ext := filepath.Ext(page.FileName)
+		ext := filepath.Ext(i.FileName)
 		switch ext {
 		case ".jpg", ".jpeg":
 			err := jpeg.Encode(file, img, nil)
@@ -123,6 +119,8 @@ func run() error {
 			return err
 		}
 	}
+
+	wg.Done()
 
 	return nil
 }

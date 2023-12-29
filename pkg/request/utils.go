@@ -1,30 +1,27 @@
 package request
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"image"
-	_ "image/jpeg"
-	_ "image/png"
 	"io"
 	"net/http"
-	"net/http/cookiejar"
+	"path"
+	"strings"
 )
 
-const defaultUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1"
-
-var client = &http.Client{}
-
-type Config struct {
-	Headers map[string]string
-	Body    interface{}
-	Cookies []*http.Cookie
+func JoinURL(base string, paths ...string) string {
+	p := path.Join(paths...)
+	return fmt.Sprintf("%s/%s", strings.TrimRight(base, "/"), strings.TrimLeft(p, "/"))
 }
 
-func init() {
-	jar, _ := cookiejar.New(nil)
-	client.Jar = jar
+func defaultConfig() *Config {
+	return &Config{
+		Headers: map[string]string{
+			"user-agent": defaultUserAgent,
+		},
+		Cookies: make([]*http.Cookie, 0),
+	}
 }
 
 func newRequest(method, url string, body io.Reader, c Config) (*http.Request, error) {
@@ -96,66 +93,4 @@ func handleResponse(resp *http.Response, r interface{}) error {
 	}
 
 	return nil
-}
-
-func Get[T interface{}](url string, args *Config) (T, error) {
-	var r T
-	if args == nil {
-		args = &Config{}
-	}
-
-	req, err := newRequest("GET", url, nil, *args)
-	if err != nil {
-		return r, err
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return r, err
-	}
-
-	err = handleResponse(resp, &r)
-	if err != nil {
-		return r, err
-	}
-
-	return r, nil
-}
-
-func Post[T interface{}](url string, args *Config) (T, error) {
-	var r T
-	if args == nil {
-		args = &Config{}
-	}
-
-	serialized, err := json.Marshal(args.Body)
-	if err != nil {
-		return r, err
-	}
-
-	req, err := newRequest("POST", url, bytes.NewBuffer(serialized), *args)
-	if err != nil {
-		return r, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return r, err
-	}
-
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return r, err
-	}
-
-	err = json.Unmarshal(body, &r)
-	if err != nil {
-		return r, err
-	}
-
-	return r, nil
 }

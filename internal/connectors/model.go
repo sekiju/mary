@@ -1,4 +1,4 @@
-package readers
+package connectors
 
 import (
 	"image"
@@ -7,13 +7,11 @@ import (
 
 type Base struct {
 	Domain string
-	Data   map[string]any
 }
 
 func NewBase(domain string) *Base {
 	return &Base{
 		Domain: domain,
-		Data:   map[string]any{},
 	}
 }
 
@@ -23,14 +21,14 @@ type ReaderImage struct {
 	Image    ImageFunction
 }
 
-func NewReaderImage(fn string, imf *ImageFunction) ReaderImage {
+func NewConnectorImage(fn string, imf *ImageFunction) ReaderImage {
 	return ReaderImage{
 		FileName: fn,
 		Image:    *imf,
 	}
 }
 
-type Reader interface {
+type Connector interface {
 	Context() *Base
 	Pages(uri url.URL, imageChan chan<- ReaderImage) error
 }

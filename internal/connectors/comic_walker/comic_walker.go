@@ -1,9 +1,9 @@
 package comic_walker
 
 import (
-	"559/internal/readers"
+	"559/internal/connectors"
 	"559/internal/utils"
-	"559/internal/utils/request"
+	"559/pkg/request"
 	"bytes"
 	"encoding/hex"
 	"fmt"
@@ -15,20 +15,20 @@ import (
 )
 
 type ComicWalker struct {
-	*readers.Base
+	*connectors.Base
 }
 
 func New() *ComicWalker {
 	return &ComicWalker{
-		Base: readers.NewBase("comic-walker.com"),
+		Base: connectors.NewBase("comic-walker.com"),
 	}
 }
 
-func (c *ComicWalker) Context() *readers.Base {
+func (c *ComicWalker) Context() *connectors.Base {
 	return c.Base
 }
 
-func (c *ComicWalker) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) error {
+func (c *ComicWalker) Pages(uri url.URL, imageChan chan<- connectors.ReaderImage) error {
 	// todo: session support
 
 	if !uri.Query().Has("cid") {
@@ -42,24 +42,26 @@ func (c *ComicWalker) Pages(uri url.URL, imageChan chan<- readers.ReaderImage) e
 
 	fnf := utils.NewIndexNameFormatter(len(resp.Data.Result))
 	for i, page := range resp.Data.Result {
-
-		// info: memorize
-		src, hash := page.Meta.SourceUrl, page.Meta.DrmHash
-
-		var imageFunc readers.ImageFunction
-		imageFunc = func() (image.Image, error) {
-			img, err := request.Get[[]byte](src, nil)
-			if err != nil {
-				return nil, err
-			}
-
-			return decodeImage(img, hash)
-		}
-
-		imageChan <- readers.NewReaderImage(fnf.GetName(i, ".jpg"), &imageFunc)
+		processPage(page.Meta.SourceUrl, page.Meta.DrmHash, fnf.GetName(i, ".jpg"), imageChan)
 	}
 
+	close(imageChan)
+
 	return nil
+}
+
+func processPage(uri, hash string, fileName string, imageChan chan<- connectors.ReaderImage) {
+	var fn connectors.ImageFunction
+	fn = func() (image.Image, error) {
+		img, err := request.Get[[]byte](uri, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		return decodeImage(img, hash)
+	}
+
+	imageChan <- connectors.NewConnectorImage(fileName, &fn)
 }
 
 func decodeImage(b []byte, hash string) (image.Image, error) {

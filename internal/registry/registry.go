@@ -1,39 +1,37 @@
 package registry
 
 import (
-	"559/internal/readers"
-	"559/internal/readers/comic_walker"
-	"559/internal/readers/fod"
-	"559/internal/readers/giga_viewer"
-	"559/internal/readers/pixiv"
-	"559/internal/readers/takeshobo"
-	"559/internal/utils"
-	"encoding/json"
+	"559/internal/connectors"
+	"559/internal/connectors/comic_walker"
+	"559/internal/connectors/fod"
+	"559/internal/connectors/giga_viewer"
+	"559/internal/connectors/pixiv"
+	"559/internal/connectors/takeshobo"
 	"fmt"
 	"sync"
 )
 
 type ReadersRegistry struct {
-	readers map[string]readers.Reader
+	readers map[string]connectors.Connector
 	mu      sync.RWMutex
 }
 
 var Default = &ReadersRegistry{
-	readers: make(map[string]readers.Reader),
+	readers: make(map[string]connectors.Connector),
 }
 
-func (r *ReadersRegistry) Add(n readers.Reader) {
+func (r *ReadersRegistry) Add(n connectors.Connector) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	r.readers[n.Context().Domain] = n
 }
 
-func (r *ReadersRegistry) All() []readers.Reader {
+func (r *ReadersRegistry) All() []connectors.Connector {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	v := make([]readers.Reader, len(r.readers))
+	v := make([]connectors.Connector, len(r.readers))
 	for _, value := range r.readers {
 		v = append(v, value)
 	}
@@ -41,7 +39,7 @@ func (r *ReadersRegistry) All() []readers.Reader {
 	return v
 }
 
-func (r *ReadersRegistry) FindReaderByDomain(domain string) (readers.Reader, error) {
+func (r *ReadersRegistry) FindReaderByDomain(domain string) (connectors.Connector, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -53,7 +51,7 @@ func (r *ReadersRegistry) FindReaderByDomain(domain string) (readers.Reader, err
 	return parser, nil
 }
 
-//type TemplateNewFunc func(domain string) readers.Reader
+//type TemplateNewFunc func(domain string) connectors.Connector
 
 //func (r *ReadersRegistry) MassiveAdd(tfunc TemplateNewFunc, domains []string) {
 //	r.mu.Lock()
@@ -61,7 +59,7 @@ func (r *ReadersRegistry) FindReaderByDomain(domain string) (readers.Reader, err
 //
 //	for _, domain := range domains {
 //		reader := tfunc(domain)
-//		r.readers[reader.Domain()] = reader
+//		r.connectors[reader.Domain()] = reader
 //	}
 //}
 
@@ -93,27 +91,4 @@ func init() {
 		Default.Add(giga_viewer.New(domain))
 	}
 	Default.Add(takeshobo.New())
-
-	configFile, err := utils.ReadFile("settings.json")
-	if err == nil {
-		var config Config
-		err := json.Unmarshal(configFile, &config)
-		if err != nil {
-			fmt.Println("Error parsing JSON:", err)
-		}
-
-		for domain, cfg := range config {
-			r, err := Default.FindReaderByDomain(domain)
-			if err != nil {
-				fmt.Printf("Unknown website %q in settings.json\n", domain)
-				continue
-			}
-
-			for k, v := range cfg {
-				r.Context().Data[k] = v
-			}
-		}
-	} else {
-		fmt.Println("Create settings.json file for download private books")
-	}
 }
