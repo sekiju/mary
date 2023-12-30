@@ -10,7 +10,7 @@
 
 - [manga.fod.fujitv.co.jp](https://manga.fod.fujitv.co.jp/)
 - [shonenjumpplus.com](https://shonenjumpplus.com/)
-- [comic-walker.com](https://comic-walker.com/) _(без авторизации)_
+- [comic-walker.com](https://comic-walker.com/) _(регистрация в коде не поддерживается)_
 - [www.pixiv.net](https://www.pixiv.net/)
 - [pocket.shonenmagazine.com](https://pocket.shonenmagazine.com)
 - [comic-action.com](https://comic-action.com)
@@ -26,7 +26,9 @@
 - [tonarinoyj.jp](https://tonarinoyj.jp)
 - [viewer.heros-web.com](https://viewer.heros-web.com)
 - [www.sunday-webry.com](https://www.sunday-webry.com)
-- [storia.takeshobo.co.jp](https://storia.takeshobo.co.jp)
+- [storia.takeshobo.co.jp](https://storia.takeshobo.co.jp) (без регистрации)
+- [comicbushi-web.com](https://comicbushi-web.com)
+- [comic.webnewtype.com](https://comic.webnewtype.com) (без регистрации)
 
 ## Настройки
 

@@ -51,6 +51,6 @@ func Load(opts ...Func) (Config, error) {
 
 func (c *Config) validate() error {
 	return validation.ValidateStruct(&c.Settings,
-		validation.Field(&c.Settings.Threads, validation.Required, validation.Min(1)),
+		validation.Field(&c.Settings.Threads, validation.Required, validation.Min(1), validation.Max(runtime.NumCPU())),
 	)
 }

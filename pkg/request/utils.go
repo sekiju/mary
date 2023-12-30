@@ -56,7 +56,7 @@ func handleResponse(resp *http.Response, r interface{}) error {
 	}
 
 	switch resp.Header.Get("content-type") {
-	case "application/json", "application/json; charset=utf-8":
+	case "application/json", "application/json; charset=utf-8", "application/json; charset=UTF-8":
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err

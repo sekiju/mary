@@ -25,8 +25,15 @@ func main() {
 }
 
 func run() error {
+	var arg string
 	if len(os.Args) < 2 {
-		return fmt.Errorf("usage: 559 <url to chapter viewer>")
+		fmt.Print("input url of chapter viewer: ")
+		_, err := fmt.Scanln(&arg)
+		if err != nil {
+			return err
+		}
+	} else {
+		arg = os.Args[1]
 	}
 
 	cfg, err := config.Load()
@@ -34,7 +41,7 @@ func run() error {
 		return err
 	}
 
-	uri, err := url.Parse(os.Args[1])
+	uri, err := url.Parse(arg)
 	if err != nil {
 		return err
 	}
@@ -61,7 +68,7 @@ func run() error {
 		err = reader.Pages(*uri, imageChan)
 		if err != nil {
 			fmt.Println(err)
-			os.Exit(1)
+			close(imageChan)
 		}
 	}()
 
@@ -90,6 +97,8 @@ func run() error {
 }
 
 func worker(outputPath string, imageChan <-chan connectors.ReaderImage, wg *sync.WaitGroup) error {
+	defer wg.Done()
+
 	for i := range imageChan {
 		file, err := os.Create(filepath.Join(outputPath, i.FileName))
 		if err != nil {
@@ -99,6 +108,10 @@ func worker(outputPath string, imageChan <-chan connectors.ReaderImage, wg *sync
 		img, err := i.Image()
 
 		ext := filepath.Ext(i.FileName)
+		if ext == "" {
+			return fmt.Errorf("file has no extension: %s", i.FileName)
+		}
+
 		switch ext {
 		case ".jpg", ".jpeg":
 			err := jpeg.Encode(file, img, nil)
@@ -119,8 +132,6 @@ func worker(outputPath string, imageChan <-chan connectors.ReaderImage, wg *sync
 			return err
 		}
 	}
-
-	wg.Done()
 
 	return nil
 }

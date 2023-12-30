@@ -5,6 +5,7 @@ import (
 	"559/internal/connectors/comic_walker"
 	"559/internal/connectors/fod"
 	"559/internal/connectors/giga_viewer"
+	"559/internal/connectors/newtype"
 	"559/internal/connectors/pixiv"
 	"559/internal/connectors/takeshobo"
 	"fmt"
@@ -86,9 +87,11 @@ func init() {
 		"tonarinoyj.jp",
 		"viewer.heros-web.com",
 		"www.sunday-webry.com",
+		"comicbushi-web.com",
 	}
 	for _, domain := range gigaViewerWebsites {
 		Default.Add(giga_viewer.New(domain))
 	}
 	Default.Add(takeshobo.New())
+	Default.Add(newtype.New())
 }
