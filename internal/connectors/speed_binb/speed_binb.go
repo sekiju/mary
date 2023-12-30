@@ -1,4 +1,4 @@
-package takeshobo
+package speed_binb
 
 import (
 	"559/internal/connectors"
@@ -12,19 +12,19 @@ import (
 	"strconv"
 )
 
-type StoriaTakeshobo struct {
+type SpeedBinb struct {
 	*connectors.Base
 }
 
-func New() *StoriaTakeshobo {
-	return &StoriaTakeshobo{Base: connectors.NewBase("storia.takeshobo.co.jp")}
+func New(domain string) *SpeedBinb {
+	return &SpeedBinb{Base: connectors.NewBase(domain)}
 }
 
-func (t *StoriaTakeshobo) Context() *connectors.Base {
-	return t.Base
+func (g *SpeedBinb) Context() *connectors.Base {
+	return g.Base
 }
 
-func (t *StoriaTakeshobo) Pages(uri url.URL, imageChan chan<- connectors.ReaderImage) error {
+func (g *SpeedBinb) Pages(uri url.URL, imageChan chan<- connectors.ReaderImage) error {
 	doc, err := request.GetDocument(uri.String(), nil)
 	if err != nil {
 		return err
@@ -38,7 +38,7 @@ func (t *StoriaTakeshobo) Pages(uri url.URL, imageChan chan<- connectors.ReaderI
 
 	fnf := utils.NewIndexNameFormatter(len(pages))
 	for i := 0; i < len(pages); i++ {
-		processPage(uri, pages[i], fnf.GetName(i, ".jpg"), imageChan)
+		processPtimgPage(uri, pages[i], fnf.GetName(i, ".jpg"), imageChan)
 	}
 
 	close(imageChan)
@@ -46,7 +46,7 @@ func (t *StoriaTakeshobo) Pages(uri url.URL, imageChan chan<- connectors.ReaderI
 	return nil
 }
 
-func processPage(uri url.URL, page string, fileName string, imageChan chan<- connectors.ReaderImage) {
+func processPtimgPage(uri url.URL, page string, fileName string, imageChan chan<- connectors.ReaderImage) {
 	var fn connectors.ImageFunction
 	fn = func() (image.Image, error) {
 		ptimg, err := request.Get[Ptimg](request.JoinURL(uri.String(), page), nil)
@@ -59,13 +59,13 @@ func processPage(uri url.URL, page string, fileName string, imageChan chan<- con
 			return nil, err
 		}
 
-		return descrambleImage(img, ptimg.Views), nil
+		return descramblePtimgImage(img, ptimg.Views), nil
 	}
 
 	imageChan <- connectors.NewConnectorImage(fileName, &fn)
 }
 
-func descrambleImage(img image.Image, views []PtimgView) image.Image {
+func descramblePtimgImage(img image.Image, views []PtimgView) image.Image {
 	descrambledImg := image.NewRGBA(image.Rect(0, 0, views[0].Width, views[0].Height))
 
 	re := regexp.MustCompile("[:,+>]")

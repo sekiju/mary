@@ -1,4 +1,4 @@
-package takeshobo
+package speed_binb
 
 type Ptimg struct {
 	PtimgVersion int `json:"ptimg-version"`

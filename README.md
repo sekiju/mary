@@ -29,6 +29,7 @@
 - [storia.takeshobo.co.jp](https://storia.takeshobo.co.jp) (без регистрации)
 - [comicbushi-web.com](https://comicbushi-web.com)
 - [comic.webnewtype.com](https://comic.webnewtype.com) (без регистрации)
+- [www.comic-valkyrie.com](https://www.comic-valkyrie.com)
 
 ## Настройки
 
