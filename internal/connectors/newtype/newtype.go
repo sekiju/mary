@@ -32,6 +32,8 @@ func (n *Newtype) Pages(uri url.URL, imageChan chan<- connectors.ReaderImage) er
 		processPage(src, fnf.GetName(i, ".jpg"), imageChan)
 	}
 
+	close(imageChan)
+
 	return nil
 }
 
