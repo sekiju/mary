@@ -6,10 +6,15 @@ type Config struct {
 }
 
 type Settings struct {
-	EnableDebug       bool   `yaml:"enable_debug"`
-	OutputPath        string `yaml:"output_path"`
-	ClearOutputFolder bool   `yaml:"clear_output_folder"`
-	Threads           int    `yaml:"threads"`
+	Debug             DebugSettings `yaml:"debug"`
+	OutputPath        string        `yaml:"output_path"`
+	ClearOutputFolder bool          `yaml:"clear_output_folder"`
+	Threads           int           `yaml:"threads"`
+}
+
+type DebugSettings struct {
+	Enable bool   `yaml:"enable"`
+	Url    string `yaml:"url"`
 }
 
 type SiteConfig struct {

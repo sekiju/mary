@@ -25,20 +25,25 @@ func main() {
 }
 
 func run() error {
-	var arg string
-	if len(os.Args) < 2 {
-		fmt.Print("input url of chapter viewer: ")
-		_, err := fmt.Scanln(&arg)
-		if err != nil {
-			return err
-		}
-	} else {
-		arg = os.Args[1]
-	}
-
 	cfg, err := config.Load()
 	if err != nil {
 		return err
+	}
+
+	var arg string
+	if len(os.Args) < 2 {
+		if cfg.Settings.Debug.Enable && len(cfg.Settings.Debug.Url) > 0 {
+			arg = cfg.Settings.Debug.Url
+			fmt.Printf("debug url: %s\n", arg)
+		} else {
+			fmt.Print("input url of chapter viewer: ")
+			_, err := fmt.Scanln(&arg)
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		arg = os.Args[1]
 	}
 
 	uri, err := url.Parse(arg)

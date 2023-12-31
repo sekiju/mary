@@ -100,12 +100,12 @@ func (f *Fod) Pages(uri url.URL, imageChan chan<- connectors.ReaderImage) error 
 		}
 
 		processPage(imageUrl, resp.GuardianInfoAll.KeysForBrowser[i-1], fnf.GetName(i, ".jpg"), imageChan)
-		if config.State.Settings.EnableDebug {
+		if config.State.Settings.Debug.Enable {
 			processOriginalPage(imageUrl, fnf.GetName(i, "_original.jpg"), imageChan)
 		}
 	}
 
-	if config.State.Settings.EnableDebug {
+	if config.State.Settings.Debug.Enable {
 		imageUrl, err := cleanURL(resp.GuardianInfoForBrowser.GUARDIANSERVER + normalizeUrl(resp.GuardianInfoForBrowser.BookData.S3Key) + strconv.Itoa(1) + ".jpg?" + resp.GuardianInfoForBrowser.ADDITIONALQUERYSTRING)
 		if err != nil {
 			return err

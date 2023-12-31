@@ -37,7 +37,9 @@
 
 ```yaml
 settings:
-  enable_debug: true
+  debug: 
+    enable: true
+    url: https://shonenjumpplus.com/episode/14079602755375556618
   output_path: output/
   clear_output_folder: true
   threads: 6

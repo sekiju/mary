@@ -3,7 +3,7 @@ package newtype
 import (
 	"559/internal/connectors"
 	"559/internal/utils"
-	request "559/pkg/request"
+	"559/pkg/request"
 	"image"
 	"net/url"
 	"strings"

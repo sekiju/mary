@@ -12,7 +12,7 @@ type Func func(*Config)
 func defaultConfig() Config {
 	return Config{
 		Settings: Settings{
-			EnableDebug:       false,
+			Debug:             DebugSettings{Enable: false, Url: ""},
 			OutputPath:        "output/",
 			ClearOutputFolder: true,
 			Threads:           runtime.NumCPU(),
