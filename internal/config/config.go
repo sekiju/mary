@@ -31,7 +31,7 @@ func Load(opts ...Func) (Config, error) {
 
 	data, err := os.ReadFile("config.yaml")
 	if err != nil {
-		return config, err
+		return config, nil
 	}
 
 	err = yaml.Unmarshal(data, &config)
