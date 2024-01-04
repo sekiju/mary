@@ -1,15 +1,11 @@
 package speed_binb
 
 import (
+	"559/internal/config"
 	"559/internal/connectors"
-	"559/internal/utils"
 	"559/pkg/request"
-	"github.com/PuerkitoBio/goquery"
-	"image"
-	"image/draw"
 	"net/url"
-	"regexp"
-	"strconv"
+	"strings"
 )
 
 type SpeedBinb struct {
@@ -20,68 +16,39 @@ func New(domain string) *SpeedBinb {
 	return &SpeedBinb{Base: connectors.NewBase(domain)}
 }
 
-func (g *SpeedBinb) Context() *connectors.Base {
-	return g.Base
+func (s *SpeedBinb) Context() *connectors.Base {
+	return s.Base
 }
 
-func (g *SpeedBinb) Pages(uri url.URL, imageChan chan<- connectors.ReaderImage) error {
-	doc, err := request.GetDocument(uri.String(), nil)
+func (s *SpeedBinb) Pages(uri url.URL, imageChan chan<- connectors.ReaderImage) error {
+	var c = request.Config{Headers: map[string]string{}}
+	connectorConfig, exists := config.State.Sites[s.Domain]
+
+	if exists {
+		c.Headers["cookie"] = connectorConfig.Session
+	}
+
+	doc, err := request.GetDocument(uri.String(), &c)
 	if err != nil {
 		return err
 	}
 
-	var pages []string
-	doc.Find("div#content.pages > div").Each(func(i int, s *goquery.Selection) {
-		text, _ := s.Attr("data-ptimg")
-		pages = append(pages, text)
-	})
+	pagesContent := doc.Find("div#content.pages").First()
+	ptbinb, ptbinbExists := pagesContent.Attr("data-ptbinb")
+	ptbinbCid, ptbinbCidExists := pagesContent.Attr("data-ptbinb-cid")
+	q := uri.Query()
 
-	fnf := utils.NewIndexNameFormatter(len(pages))
-	for i := 0; i < len(pages); i++ {
-		processPtimgPage(uri, pages[i], fnf.GetName(i, ".jpg"), imageChan)
+	if ptbinbExists && ptbinbCidExists {
+		q.Set("cid", ptbinbCid)
+		uri.RawQuery = q.Encode()
+		return handleV016113(uri, imageChan)
+	} else if ptbinbExists && strings.Contains(ptbinb, "bibGetCntntInfo") && q.Has("u0") && q.Has("u1") {
+		return handleV016452(uri, ptbinb, &c, imageChan)
+	} else if ptbinbExists && strings.Contains(ptbinb, "bibGetCntntInfo") && q.Has("u1") {
+		return handleV016201(uri, imageChan)
+	} else if ptbinbExists && strings.Contains(ptbinb, "bibGetCntntInfo") {
+		return handleV016130(uri, imageChan)
+	} else {
+		return handleV016061(uri, imageChan, pagesContent)
 	}
-
-	close(imageChan)
-
-	return nil
-}
-
-func processPtimgPage(uri url.URL, page string, fileName string, imageChan chan<- connectors.ReaderImage) {
-	var fn connectors.ImageFunction
-	fn = func() (image.Image, error) {
-		ptimg, err := request.Get[Ptimg](request.JoinURL(uri.String(), page), nil)
-		if err != nil {
-			return nil, err
-		}
-
-		img, err := request.Get[image.Image](request.JoinURL(uri.String(), "data", ptimg.Resources.I.Src), nil)
-		if err != nil {
-			return nil, err
-		}
-
-		return descramblePtimgImage(img, ptimg.Views), nil
-	}
-
-	imageChan <- connectors.NewConnectorImage(fileName, &fn)
-}
-
-func descramblePtimgImage(img image.Image, views []PtimgView) image.Image {
-	descrambledImg := image.NewRGBA(image.Rect(0, 0, views[0].Width, views[0].Height))
-
-	re := regexp.MustCompile("[:,+>]")
-	for _, part := range views[0].Coords {
-		num := re.Split(part, -1)
-
-		sourceX, _ := strconv.Atoi(num[1])
-		sourceY, _ := strconv.Atoi(num[2])
-		partWidth, _ := strconv.Atoi(num[3])
-		partHeight, _ := strconv.Atoi(num[4])
-		targetX, _ := strconv.Atoi(num[5])
-		targetY, _ := strconv.Atoi(num[6])
-
-		dstRect, drawRect := image.Rect(targetX, targetY, targetX+partWidth, targetY+partHeight), image.Rect(sourceX, sourceY, sourceX+partWidth, sourceY+partHeight)
-		draw.Draw(descrambledImg, dstRect, img, drawRect.Min, draw.Src)
-	}
-
-	return descrambledImg
 }
