@@ -103,6 +103,99 @@ type BibGetCntntInfo struct {
 	} `json:"items"`
 }
 
+type BibGetCntntInfo16130 struct {
+	Result          int         `json:"result"`
+	ShopUserID      interface{} `json:"ShopUserID"`
+	Eurl            string      `json:"eurl"`
+	Rurl            string      `json:"rurl"`
+	BannerCloseTime int         `json:"BannerCloseTime"`
+	TerminalType    int         `json:"TerminalType"`
+	MenuUpdateTime  string      `json:"MenuUpdateTime"`
+	Items           []struct {
+		ContentID      string `json:"ContentID"`
+		ContentsServer string `json:"ContentsServer"`
+		ServerType     int    `json:"ServerType"`
+		Authors        []struct {
+			Name string      `json:"Name"`
+			Ruby interface{} `json:"Ruby"`
+			Role interface{} `json:"Role"`
+			Path string      `json:"Path"`
+		} `json:"Authors"`
+		Publisher                      string        `json:"Publisher"`
+		PublisherRuby                  string        `json:"PublisherRuby"`
+		Title                          string        `json:"Title"`
+		ParentTitle                    string        `json:"ParentTitle"`
+		EpisodeThumbnail               string        `json:"EpisodeThumbnail"`
+		ParentDescription              string        `json:"ParentDescription"`
+		TitleRuby                      string        `json:"TitleRuby"`
+		SubTitle                       string        `json:"SubTitle"`
+		Categories                     []interface{} `json:"Categories"`
+		Abstract                       string        `json:"Abstract"`
+		Description                    string        `json:"Description"`
+		ContentType                    int           `json:"ContentType"`
+		MostRecommendUser              interface{}   `json:"MostRecommendUser"`
+		LastPageDim                    int           `json:"LastPageDim"`
+		LastPageColor                  string        `json:"LastPageColor"`
+		LastPageURL                    string        `json:"LastPageURL"`
+		LastPageCssURL                 string        `json:"LastPageCssURL"`
+		RecommendPageURL               string        `json:"RecommendPageURL"`
+		WarningPageURL                 string        `json:"WarningPageURL"`
+		WarningPageCssURL              string        `json:"WarningPageCssURL"`
+		ShopURL                        string        `json:"ShopURL"`
+		OutOfRangeAutoBookmarkBehavior string        `json:"OutOfRangeAutoBookmarkBehavior"`
+		ThumbnailImageURL              string        `json:"ThumbnailImageURL"`
+		IPAddress                      string        `json:"IPAddress"`
+		ViewMode                       int           `json:"ViewMode"`
+		Stbl                           string        `json:"stbl"`
+		Ttbl                           string        `json:"ttbl"`
+		Ptbl                           string        `json:"ptbl"`
+		Ctbl                           string        `json:"ctbl"`
+		P                              interface{}   `json:"p"`
+		SliderCaption                  int           `json:"SliderCaption"`
+		FirstBanner                    []struct {
+			Index int    `json:"index"`
+			Name  string `json:"name"`
+			Url   string `json:"url"`
+			Img   string `json:"img"`
+		} `json:"FirstBanner"`
+		Banners struct {
+			AfterViewer1 []struct {
+				Index int    `json:"index"`
+				Name  string `json:"name"`
+				Url   string `json:"url"`
+				Img   string `json:"img"`
+			} `json:"after_viewer_1"`
+			AfterViewer2 []struct {
+				Index int    `json:"index"`
+				Name  string `json:"name"`
+				Url   string `json:"url"`
+				Img   string `json:"img"`
+			} `json:"after_viewer_2"`
+			AfterViewer3 []struct {
+				Index int    `json:"index"`
+				Name  string `json:"name"`
+				Url   string `json:"url"`
+				Img   string `json:"img"`
+			} `json:"after_viewer_3"`
+		} `json:"Banners"`
+		ShareURL                 string `json:"ShareURL"`
+		TwitterHashTag           string `json:"TwitterHashTag"`
+		Price                    string `json:"Price"`
+		UseGuidePage             int    `json:"UseGuidePage"`
+		RequestShowOperationTips string `json:"RequestShowOperationTips"`
+		RelativeUrlRoot          string `json:"RelativeUrlRoot"`
+		ConverterVersion         string `json:"ConverterVersion"`
+		InlineRecommendPageURL   []struct {
+			Url string `json:"Url"`
+		} `json:"InlineRecommendPageURL"`
+		ParentPath      string      `json:"ParentPath"`
+		Customer        interface{} `json:"Customer"`
+		PrevEpisode     interface{} `json:"PrevEpisode"`
+		NextEpisode     string      `json:"NextEpisode"`
+		FavoritePageUrl string      `json:"FavoritePageUrl"`
+	} `json:"items"`
+}
+
 type SbcGetCntnt struct {
 	SBCVersion       string  `json:"SBCVersion"`
 	Result           int     `json:"result"`

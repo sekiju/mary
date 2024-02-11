@@ -38,7 +38,7 @@ func run() error {
 	if len(os.Args) < 2 {
 		if config.Data.Settings.Debug.Enable && len(config.Data.Settings.Debug.Url) > 0 {
 			arg = config.Data.Settings.Debug.Url
-			log.Trace().Msgf("debug url: %s\n", arg)
+			log.Trace().Msgf("debug url: %s", arg)
 		} else {
 			log.Info().Msg("provide the URL of the chapter viewer:")
 

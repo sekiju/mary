@@ -41,13 +41,13 @@ func (s *SpeedBinb) Pages(uri url.URL, imageChan chan<- connectors.ReaderImage) 
 	if ptbinbExists && ptbinbCidExists {
 		q.Set("cid", ptbinbCid)
 		uri.RawQuery = q.Encode()
-		return handleV016113(uri, imageChan)
+		return handleV016113(uri, ptbinb, imageChan)
 	} else if ptbinbExists && strings.Contains(ptbinb, "bibGetCntntInfo") && q.Has("u0") && q.Has("u1") {
 		return handleV016452(uri, ptbinb, &c, imageChan)
 	} else if ptbinbExists && strings.Contains(ptbinb, "bibGetCntntInfo") && q.Has("u1") {
 		return handleV016201(uri, imageChan)
 	} else if ptbinbExists && strings.Contains(ptbinb, "bibGetCntntInfo") {
-		return handleV016130(uri, imageChan)
+		return handleV016130(uri, ptbinb, imageChan)
 	} else {
 		return handleV016061(uri, imageChan, pagesContent)
 	}

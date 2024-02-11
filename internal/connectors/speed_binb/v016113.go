@@ -5,6 +5,6 @@ import (
 	"net/url"
 )
 
-func handleV016113(uri url.URL, imageChan chan<- connectors.ReaderImage) error {
-	return handleV016130(uri, imageChan)
+func handleV016113(uri url.URL, apiUrl string, imageChan chan<- connectors.ReaderImage) error {
+	return handleV016130(uri, apiUrl, imageChan)
 }

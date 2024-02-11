@@ -31,6 +31,7 @@
 - [comic.webnewtype.com](https://comic.webnewtype.com) (без регистрации)
 - [www.comic-valkyrie.com](https://www.comic-valkyrie.com)
 - [cmoa.jp](https://cmoa.jp)
+- [yanmaga.jp](https://yanmaga.jp)
 
 ## Настройки
 

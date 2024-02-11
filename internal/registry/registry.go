@@ -98,6 +98,7 @@ func init() {
 		"storia.takeshobo.co.jp",
 		"www.comic-valkyrie.com",
 		"www.cmoa.jp",
+		"yanmaga.jp",
 	}
 	for _, domain := range speedBinbWebsites {
 		Default.Add(speed_binb.New(domain))

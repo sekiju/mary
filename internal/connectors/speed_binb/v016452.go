@@ -7,8 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"image"
-	"image/draw"
+	"github.com/rs/zerolog/log"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -31,6 +30,8 @@ func handleV016452(uri url.URL, apiUrl string, c *request.Config, imageChan chan
 	if err != nil {
 		return err
 	}
+
+	log.Trace().Msgf("bibGetCntntInfo: %s", uri.String())
 
 	if bibGetCntntInfoItems.Result != 1 {
 		return fmt.Errorf("invalid bibGetCntntInfoItems result")
@@ -56,6 +57,8 @@ func handleV016452(uri url.URL, apiUrl string, c *request.Config, imageChan chan
 	q.Set("dmytime", bibGetCntntInfo.ContentDate)
 	sbcGetCntntUrl.RawQuery = q.Encode()
 
+	log.Trace().Msgf("sbcGetCntntUrl: %s", sbcGetCntntUrl.String())
+
 	sbcGetCntnt, err := request.Get[SbcGetCntnt](sbcGetCntntUrl.String(), nil)
 	if err != nil {
 		return err
@@ -74,53 +77,19 @@ func handleV016452(uri url.URL, apiUrl string, c *request.Config, imageChan chan
 
 	tImages.Each(func(i int, selection *goquery.Selection) {
 		src, _ := selection.Attr("src")
-		process016452(*sbcGetImgUrl, fileName.GetName(i, ".jpg"), src, ctbl, ptbl, imageChan)
+
+		q = sbcGetImgUrl.Query()
+		q.Set("src", src)
+		sbcGetImgUrl.RawQuery = q.Encode()
+
+		imgUrl := sbcGetImgUrl.String()
+		log.Trace().Msgf("%s: %s", fileName.GetName(i, ".jpg"), imgUrl)
+
+		process016130(imgUrl, src, fileName.GetName(i, ".jpg"), ctbl, ptbl, imageChan)
 	})
 
 	close(imageChan)
 	return nil
-}
-
-// todo: move to 0161130
-func process016452(uri url.URL, fileName, src string, ctbl, ptbl []string, imageChan chan<- connectors.ReaderImage) {
-	var fn connectors.ImageFunction
-	fn = func() (image.Image, error) {
-		q := uri.Query()
-		q.Set("src", src)
-		uri.RawQuery = q.Encode()
-
-		prototype := lt(src, ctbl, ptbl)
-		if prototype == nil || !prototype.vt() {
-			return nil, fmt.Errorf("prototype.vt() dont exists")
-		}
-
-		img, err := request.Get[image.Image](uri.String(), nil)
-		if err != nil {
-			return nil, err
-		}
-
-		e := prototype.dt(img.Bounds())
-
-		view := DescrambleView{Width: e.Dx(), Height: e.Dy(), Transfers: []DescrambleTransfer{{0, prototype.gt(img.Bounds())}}}
-
-		return descramble016452(img, &view), nil
-	}
-
-	imageChan <- connectors.NewConnectorImage(fileName, &fn)
-}
-
-// todo: move to 0161130
-func descramble016452(img image.Image, view *DescrambleView) image.Image {
-	descrambledImg := image.NewRGBA(image.Rect(0, 0, view.Width, view.Height))
-
-	for _, part := range view.Transfers[0].Coords {
-		wherePlaceRect := image.Rect(part.XDest, part.YDest, part.XDest+part.Width, part.YDest+part.Height)
-		whereTakeRect := image.Rect(part.XSrc, part.YSrc, part.XSrc+part.Width, part.YSrc+part.Height)
-
-		draw.Draw(descrambledImg, wherePlaceRect, img, whereTakeRect.Min, draw.Src)
-	}
-
-	return descrambledImg
 }
 
 // todo: move to 0161130
@@ -197,7 +166,6 @@ func lt(t string, ctbl, ptbl []string) SpeedBinbDecoder {
 	i := [2]int{0, 0}
 
 	if t != "" {
-
 		n := lastIndexOf(t, '/') + 1
 		r := len(t) - n
 		for e := 0; e < r; e++ {
