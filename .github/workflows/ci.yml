@@ -10,16 +10,16 @@ on:
       - main
 
 jobs:
-  lint:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Go 1.21.x
+      - name: Setup Go 1.21
         uses: actions/setup-go@v4
         with:
           go-version: '1.21'
       - name: Install dependencies
         run: |
           go mod download
-      - name: Test with the Go CLI
+      - name: Run tests
         run: go test ./...

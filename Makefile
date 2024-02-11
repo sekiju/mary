@@ -8,4 +8,7 @@ run:
 	go run cmd/cli/main.go
 
 test:
-	go test ./...
+	go test ./internal/...
+
+test-cover:
+	go test ./internal/... -v -coverprofile cover.out
