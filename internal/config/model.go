@@ -10,6 +10,7 @@ type Settings struct {
 	OutputPath        string
 	ClearOutputFolder bool
 	Threads           int
+	TargetMethod      *string
 }
 
 type DebugSettings struct {

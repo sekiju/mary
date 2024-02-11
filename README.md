@@ -45,6 +45,7 @@ settings:
   output_path: output/
   clear_output_folder: true
   threads: 6
+  target_method: chapter # chapter OR book
 
 sites:
   manga.fod.fujitv.co.jp:

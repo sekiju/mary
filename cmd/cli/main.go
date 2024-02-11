@@ -83,6 +83,23 @@ func run() error {
 		}
 	}
 
+	if urlType == "SHARED" {
+		if config.Data.Settings.TargetMethod != nil {
+			switch *config.Data.Settings.TargetMethod {
+			case "book":
+				urlType = "BOOK"
+			case "chapter":
+				urlType = "CHAPTER"
+			default:
+				urlType = "CHAPTER"
+				log.Warn().Msgf("unknown target_method, using CHAPTER downloader")
+			}
+		} else {
+			urlType = "CHAPTER"
+			log.Warn().Msgf("unknown settings.target_method in config.yaml, using CHAPTER downloader")
+		}
+	}
+
 	switch urlType {
 	case "BOOK":
 		if !c.Data().ChapterListAvailable {
