@@ -6,6 +6,7 @@ import (
 	"559/internal/utils"
 	"559/pkg/request"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"net/url"
 	"strconv"
 	"strings"
@@ -32,16 +33,18 @@ func (f *Fod) Pages(uri url.URL, imageChan chan<- connectors.ReaderImage) error 
 	}
 
 	headers := map[string]string{
-		"zk-app-version": "1.1.25",
+		"zk-app-version": "1.1.26",
 		"zk-os-type":     "1",
 		"zk-safe-search": "0",
 	}
 
-	connectorConfig, exists := config.State.Sites[f.Domain]
+	connectorConfig, exists := config.Data.Sites[f.Domain]
 
 	if exists {
 		headers["zk-session-key"] = connectorConfig.Session
 	}
+
+	log.Trace().Msgf("zk-session-key: %v", connectorConfig.Session)
 
 	resp, err := request.Post[LicenceKeyResponse]("https://manga.fod.fujitv.co.jp/api/books/licenceKeyForBrowser", &request.Config{
 		Headers: headers,
@@ -53,6 +56,8 @@ func (f *Fod) Pages(uri url.URL, imageChan chan<- connectors.ReaderImage) error 
 	if err != nil {
 		return fmt.Errorf("failed to fetch episode: %s", err)
 	}
+
+	log.Trace().Msgf("licenceKeyForBrowser: %v", resp)
 
 	if exists && connectorConfig.PurchaseFreeBooks {
 		isFullVersion := strings.Contains(resp.GuardianInfoForBrowser.BookData.S3Key, "_001")
@@ -74,9 +79,9 @@ func (f *Fod) Pages(uri url.URL, imageChan chan<- connectors.ReaderImage) error 
 			// todo: normalnaya validation dly oshibok
 
 			if err != nil {
-				fmt.Println("Failed to purchase book")
+				log.Error().Msg("failed to purchase book")
 			} else {
-				fmt.Println("Purchase success")
+				log.Info().Msg("purchase success")
 			}
 
 			resp, err = request.Post[LicenceKeyResponse]("https://manga.fod.fujitv.co.jp/api/books/licenceKeyForBrowser", &request.Config{
@@ -100,12 +105,12 @@ func (f *Fod) Pages(uri url.URL, imageChan chan<- connectors.ReaderImage) error 
 		}
 
 		processPage(imageUrl, resp.GuardianInfoAll.KeysForBrowser[i-1], fnf.GetName(i, ".jpg"), imageChan)
-		if config.State.Settings.Debug.Enable {
+		if config.Data.Settings.Debug.Enable {
 			processOriginalPage(imageUrl, fnf.GetName(i, "_original.jpg"), imageChan)
 		}
 	}
 
-	if config.State.Settings.Debug.Enable {
+	if config.Data.Settings.Debug.Enable {
 		imageUrl, err := cleanURL(resp.GuardianInfoForBrowser.GUARDIANSERVER + normalizeUrl(resp.GuardianInfoForBrowser.BookData.S3Key) + strconv.Itoa(1) + ".jpg?" + resp.GuardianInfoForBrowser.ADDITIONALQUERYSTRING)
 		if err != nil {
 			return err

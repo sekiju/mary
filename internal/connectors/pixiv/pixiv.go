@@ -30,7 +30,7 @@ func (p *Pixiv) Pages(uri url.URL, imageChan chan<- connectors.ReaderImage) erro
 	lastPart := path.Base(uri.Path)
 
 	var httpConfig request.Config
-	connectorConfig, exists := config.State.Sites[p.Domain]
+	connectorConfig, exists := config.Data.Sites[p.Domain]
 
 	if exists {
 		httpConfig.Cookies = []*http.Cookie{

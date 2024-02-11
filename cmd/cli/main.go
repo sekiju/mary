@@ -5,6 +5,8 @@ import (
 	"559/internal/connectors"
 	"559/internal/registry"
 	"fmt"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"image/jpeg"
 	"image/png"
 	"net/url"
@@ -17,7 +19,7 @@ import (
 func main() {
 	err := run()
 	if err != nil {
-		fmt.Print(err)
+		log.Error().Msgf("%v", err)
 		os.Exit(1)
 	}
 
@@ -25,18 +27,21 @@ func main() {
 }
 
 func run() error {
-	cfg, err := config.Load()
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
+	err := config.Load()
 	if err != nil {
 		return err
 	}
 
 	var arg string
 	if len(os.Args) < 2 {
-		if cfg.Settings.Debug.Enable && len(cfg.Settings.Debug.Url) > 0 {
-			arg = cfg.Settings.Debug.Url
-			fmt.Printf("debug url: %s\n", arg)
+		if config.Data.Settings.Debug.Enable && len(config.Data.Settings.Debug.Url) > 0 {
+			arg = config.Data.Settings.Debug.Url
+			log.Trace().Msgf("debug url: %s\n", arg)
 		} else {
-			fmt.Print("input url of chapter viewer: ")
+			log.Info().Msg("provide the URL of the chapter viewer:")
+
 			_, err := fmt.Scanln(&arg)
 			if err != nil {
 				return err
@@ -56,14 +61,14 @@ func run() error {
 		return err
 	}
 
-	fmt.Println(reader.Context().Domain, " | ", fmt.Sprintf("threads: %d", cfg.Settings.Threads))
+	log.Info().Msgf("domain: %s | threads: %d", reader.Context().Domain, config.Data.Settings.Threads)
 
 	startTime := time.Now()
 	imageChan := make(chan connectors.ReaderImage)
 	wg := &sync.WaitGroup{}
 
-	if cfg.Settings.ClearOutputFolder {
-		err := os.RemoveAll(cfg.Settings.OutputPath)
+	if config.Data.Settings.ClearOutputFolder {
+		err := os.RemoveAll(config.Data.Settings.OutputPath)
 		if err != nil {
 			return err
 		}
@@ -77,15 +82,15 @@ func run() error {
 		}
 	}()
 
-	err = os.MkdirAll(cfg.Settings.OutputPath, os.ModePerm)
+	err = os.MkdirAll(config.Data.Settings.OutputPath, os.ModePerm)
 	if err != nil {
 		return err
 	}
 
-	for i := 0; i < int(cfg.Settings.Threads); i++ {
+	for i := 0; i < config.Data.Settings.Threads; i++ {
 		wg.Add(1)
 		go func() {
-			err := worker(cfg.Settings.OutputPath, imageChan, wg)
+			err := worker(config.Data.Settings.OutputPath, imageChan, wg)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
@@ -96,7 +101,7 @@ func run() error {
 	wg.Wait()
 
 	elapsedTime := time.Since(startTime)
-	fmt.Printf("Elapsed time %v+\n", elapsedTime)
+	log.Info().Msgf("Elapsed time %v\n", elapsedTime)
 
 	return nil
 }

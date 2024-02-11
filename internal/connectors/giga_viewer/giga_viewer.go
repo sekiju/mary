@@ -25,7 +25,7 @@ func (g *GigaViewer) Context() *connectors.Base {
 func (g *GigaViewer) Pages(uri url.URL, imageChan chan<- connectors.ReaderImage) error {
 	var c = request.Config{}
 
-	connectorConfig, exists := config.State.Sites[g.Domain]
+	connectorConfig, exists := config.Data.Sites[g.Domain]
 
 	if exists {
 		c.Cookies = []*http.Cookie{

@@ -1,56 +1,45 @@
 package config
 
 import (
-	validation "github.com/go-ozzo/ozzo-validation"
-	"gopkg.in/yaml.v2"
-	"os"
+	"fmt"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/env"
+	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/v2"
 	"runtime"
+	"strings"
 )
 
-type Func func(*Config)
+var k = koanf.NewWithConf(koanf.Conf{
+	Delim:       ".",
+	StrictMerge: true,
+})
 
-func defaultConfig() Config {
-	return Config{
-		Settings: Settings{
-			Debug:             DebugSettings{Enable: false, Url: ""},
-			OutputPath:        "output/",
-			ClearOutputFolder: true,
-			Threads:           runtime.NumCPU(),
-		},
-		Sites: map[string]SiteConfig{},
-	}
+var Data = Config{
+	Settings: Settings{
+		Debug:             DebugSettings{Enable: false, Url: ""},
+		OutputPath:        "output/",
+		ClearOutputFolder: true,
+		Threads:           runtime.NumCPU(),
+	},
+	Sites: map[string]SiteConfig{},
 }
 
-var State Config
-
-func Load(opts ...Func) (Config, error) {
-	config := defaultConfig()
-	for _, fn := range opts {
-		fn(&config)
+func Load() error {
+	if err := k.Load(file.Provider("config.yaml"), yaml.Parser()); err != nil {
+		fmt.Printf("error loading config: %v\n", err)
 	}
 
-	data, err := os.ReadFile("config.yaml")
+	if err := k.Load(env.Provider("", ".", func(s string) string {
+		return strings.Replace(strings.ToLower(s), "_", ".", -1)
+	}), nil); err != nil {
+		fmt.Println(err)
+	}
+
+	err := k.Unmarshal("", &Data)
 	if err != nil {
-		return config, nil
+		return fmt.Errorf("error loading data: %v", err)
 	}
 
-	err = yaml.Unmarshal(data, &config)
-	if err != nil {
-		return config, err
-	}
-
-	err = config.validate()
-	if err != nil {
-		return config, err
-	}
-
-	State = config
-
-	return config, nil
-}
-
-func (c *Config) validate() error {
-	return validation.ValidateStruct(&c.Settings,
-		validation.Field(&c.Settings.Threads, validation.Required, validation.Min(1), validation.Max(runtime.NumCPU())),
-	)
+	return nil
 }

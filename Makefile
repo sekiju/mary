@@ -1,12 +1,11 @@
 build:
-	@go build -o bin/559 cmd/559/main.go
+	go build -o bin/559 cmd/cli/main.go
 
 buildw:
-	@go build -o bin/559.exe cmd/559/main.go
+	go build -o bin/559.exe cmd/cli/main.go
 
 run:
-	@go run cmd/559/main.go
-
+	go run cmd/cli/main.go
 
 test:
 	go test ./...

@@ -22,7 +22,7 @@ func (s *SpeedBinb) Context() *connectors.Base {
 
 func (s *SpeedBinb) Pages(uri url.URL, imageChan chan<- connectors.ReaderImage) error {
 	var c = request.Config{Headers: map[string]string{}}
-	connectorConfig, exists := config.State.Sites[s.Domain]
+	connectorConfig, exists := config.Data.Sites[s.Domain]
 
 	if exists {
 		c.Headers["cookie"] = connectorConfig.Session
