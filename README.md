@@ -1,16 +1,16 @@
 # 559
 
-## Запуск
+## Usage
 
 ```bash
 559.exe https://shonenjumpplus.com/magazine/4856001361564051266 -o output/
 ```
 
-## Сайты
+## Websites
 
 - [manga.fod.fujitv.co.jp](https://manga.fod.fujitv.co.jp/)
 - [shonenjumpplus.com](https://shonenjumpplus.com/)
-- [comic-walker.com](https://comic-walker.com/) _(регистрация в коде не поддерживается)_
+- [comic-walker.com](https://comic-walker.com/) _(session not supported)_
 - [www.pixiv.net](https://www.pixiv.net/)
 - [pocket.shonenmagazine.com](https://pocket.shonenmagazine.com)
 - [comic-action.com](https://comic-action.com)
@@ -26,20 +26,20 @@
 - [tonarinoyj.jp](https://tonarinoyj.jp)
 - [viewer.heros-web.com](https://viewer.heros-web.com)
 - [www.sunday-webry.com](https://www.sunday-webry.com)
-- [storia.takeshobo.co.jp](https://storia.takeshobo.co.jp) (без регистрации)
+- [storia.takeshobo.co.jp](https://storia.takeshobo.co.jp)
 - [comicbushi-web.com](https://comicbushi-web.com)
-- [comic.webnewtype.com](https://comic.webnewtype.com) (без регистрации)
+- [comic.webnewtype.com](https://comic.webnewtype.com)
 - [www.comic-valkyrie.com](https://www.comic-valkyrie.com)
 - [cmoa.jp](https://cmoa.jp)
 - [yanmaga.jp](https://yanmaga.jp)
 
-## Настройки
+## Config
 
-Все параметры прописываются в `config.yaml`. Пример файла:
+All parameters are specified in config.yaml. Example file:
 
 ```yaml
 settings:
-  debug: 
+  debug:
     enable: true
     url: https://shonenjumpplus.com/episode/14079602755375556618
   output_path: output/
@@ -52,12 +52,12 @@ sites:
     purchase_free_books: true
 ```
 
-Все сайты имеют обязательный параметр `session` для авторизации.
-Но некоторые имеют свои уникальные настройки, как `purchase_free_books` у `manga.fod.fujitv.co.jp`.
+All websites have a mandatory parameter `session` for authentication.<br>
+However, some have their own unique settings, such as `purchase_free_books` for `manga.fod.fujitv.co.jp`.
 
-### Дополнительные настройки
+### Parameters
 
-| Парсер                     | Параметр        | Тип    | Описание                                                                                                     |
-|----------------------------|-----------------|--------|--------------------------------------------------------------------------------------------------------------|
-|                            | session         | string | Уникальный идентификатор сеанса или сессии.                                                                  |
-| **manga.fod.fujitv.co.jp** | tryPurchaseBook | bool   | Проверяет, есть ли книга в списке бесплатных книг, если есть — парсер купит её и загрузит полноценную версию |
+| Парсер                     | Параметр        | Тип    | Описание                                                                                                                |
+|----------------------------|-----------------|--------|-------------------------------------------------------------------------------------------------------------------------|
+|                            | session         | string | Unique session identifier or session cookie                                                                             |
+| **manga.fod.fujitv.co.jp** | tryPurchaseBook | bool   | It checks if the book is in the list of free books; if it is, the parser will purchase it and download the full version |
