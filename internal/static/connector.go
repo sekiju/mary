@@ -47,6 +47,7 @@ type UrlType string
 const (
 	UrlTypeBook    UrlType = "BOOK"
 	UrlTypeChapter         = "CHAPTER"
+	UrlTypeShared          = "SHARED"
 )
 
 type Connector interface {

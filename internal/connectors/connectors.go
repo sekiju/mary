@@ -3,6 +3,7 @@ package connectors
 import (
 	"559/internal/connectors/comic_walker"
 	"559/internal/connectors/giga_viewer"
+	"559/internal/connectors/pixiv"
 	"559/internal/static"
 )
 
@@ -24,7 +25,7 @@ func Add(connectors ...static.Connector) {
 }
 
 func init() {
-	Add(comic_walker.New())
+	Add(comic_walker.New(), pixiv.New())
 
 	//Add(fod.New(), comic_walker.New(), pixiv.New(), newtype.New())
 

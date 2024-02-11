@@ -25,7 +25,7 @@ func (c *GigaViewer) Data() *static.ConnectorData {
 }
 
 func (c *GigaViewer) ResolveType(uri url.URL) (static.UrlType, error) {
-	return static.UrlTypeChapter, nil
+	return static.UrlTypeShared, nil
 }
 
 func (c *GigaViewer) Book(uri url.URL) (*static.Book, error) {
