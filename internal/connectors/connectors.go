@@ -2,6 +2,7 @@ package connectors
 
 import (
 	"559/internal/connectors/comic_walker"
+	"559/internal/connectors/giga_viewer"
 	"559/internal/static"
 )
 
@@ -27,27 +28,27 @@ func init() {
 
 	//Add(fod.New(), comic_walker.New(), pixiv.New(), newtype.New())
 
-	//gigaViewerWebsites := []string{
-	//	"shonenjumpplus.com",
-	//	"pocket.shonenmagazine.com",
-	//	"comic-action.com",
-	//	"comic-days.com",
-	//	"comic-growl.com",
-	//	"comic-earthstar.com",
-	//	"comic-gardo.com",
-	//	"comic-trail.com",
-	//	"comic-zenon.com",
-	//	"comicborder.com",
-	//	"kuragebunch.com",
-	//	"magcomi.com",
-	//	"tonarinoyj.jp",
-	//	"viewer.heros-web.com",
-	//	"www.sunday-webry.com",
-	//	"comicbushi-web.com",
-	//}
-	//for _, domain := range gigaViewerWebsites {
-	//	Add(giga_viewer.New(domain))
-	//}
+	gigaViewerWebsites := []string{
+		"shonenjumpplus.com",
+		"pocket.shonenmagazine.com",
+		"comic-action.com",
+		"comic-days.com",
+		"comic-growl.com",
+		"comic-earthstar.com",
+		"comic-gardo.com",
+		"comic-trail.com",
+		"comic-zenon.com",
+		"comicborder.com",
+		"kuragebunch.com",
+		"magcomi.com",
+		"tonarinoyj.jp",
+		"viewer.heros-web.com",
+		"www.sunday-webry.com",
+		"comicbushi-web.com",
+	}
+	for _, domain := range gigaViewerWebsites {
+		Add(giga_viewer.New(domain))
+	}
 	//
 	//speedBinbWebsites := []string{
 	//	"storia.takeshobo.co.jp",

@@ -55,6 +55,7 @@ func (c *ComicWalker) Book(uri url.URL) (*static.Book, error) {
 
 	return &static.Book{
 		Title:    res.Body.Data.Result.Meta.Title,
+		Cover:    &res.Body.Data.Result.Meta.MainImageUrl,
 		Chapters: nil,
 	}, nil
 }

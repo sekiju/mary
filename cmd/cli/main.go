@@ -18,6 +18,7 @@ func main() {
 	err := run()
 	if err != nil {
 		log.Error().Msgf("%v", err)
+		fmt.Scanln()
 		os.Exit(1)
 	}
 
@@ -30,6 +31,10 @@ func run() error {
 	err := config.Load()
 	if err != nil {
 		return err
+	}
+
+	if !config.Data.Settings.Debug.Enable {
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
 
 	var arg string
@@ -80,6 +85,10 @@ func run() error {
 
 	switch urlType {
 	case "BOOK":
+		if !c.Data().ChapterListAvailable {
+			return fmt.Errorf("site don't supporting massive parsing")
+		}
+
 		return fmt.Errorf("book downloading not yet implemented")
 	case "CHAPTER":
 		chapter, err := c.Chapter(*uri)

@@ -24,3 +24,9 @@ func SetHeader(key, value string) OptsFn {
 		c.Headers[key] = value
 	}
 }
+
+func AddCookies(cookies ...*http.Cookie) OptsFn {
+	return func(c *Config) {
+		c.Cookies = append(c.Cookies, cookies...)
+	}
+}

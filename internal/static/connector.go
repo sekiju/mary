@@ -31,14 +31,15 @@ type ConnectorData struct {
 }
 
 type Book struct {
-	Title    string `json:"title"`
-	Chapters []Chapter
+	Title    string    `json:"title"`
+	Cover    *string   `json:"cover"`
+	Chapters []Chapter `json:"chapters"`
 }
 
 type Chapter struct {
-	ID    any
-	Title string
-	Error error
+	ID    any    `json:"id"`
+	Title string `json:"title"`
+	Error error  `json:"error"`
 }
 
 type UrlType string
