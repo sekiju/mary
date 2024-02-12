@@ -20,7 +20,7 @@ func (c *GigaViewer) Data() *static.ConnectorData {
 	return &static.ConnectorData{
 		Domain:               c.domain,
 		AuthorizationStatus:  static.AuthorizationStatusOptional,
-		ChapterListAvailable: false,
+		ChapterListAvailable: true,
 	}
 }
 
@@ -29,7 +29,7 @@ func (c *GigaViewer) ResolveType(uri url.URL) (static.UrlType, error) {
 }
 
 func (c *GigaViewer) Book(uri url.URL) (*static.Book, error) {
-	res, err := request.Get[EpisodeResponse](uri.String() + ".json")
+	res, err := request.Get[EpisodeResponse](uri.String()+".json", c.withCookies())
 	if err != nil {
 		return nil, static.NotFound
 	}
@@ -47,7 +47,7 @@ func (c *GigaViewer) Book(uri url.URL) (*static.Book, error) {
 
 	chapters := make([]static.Chapter, 0)
 	for _, item := range feed.Items {
-		chapterResponse, err := request.Get[EpisodeResponse](item.Link + ".json")
+		chapterResponse, err := request.Get[EpisodeResponse](item.Link+".json", c.withCookies())
 		if err != nil {
 			return nil, static.NotFound
 		}
@@ -73,7 +73,7 @@ func (c *GigaViewer) Book(uri url.URL) (*static.Book, error) {
 }
 
 func (c *GigaViewer) Chapter(uri url.URL) (*static.Chapter, error) {
-	res, err := request.Get[EpisodeResponse](uri.String() + ".json")
+	res, err := request.Get[EpisodeResponse](uri.String()+".json", c.withCookies())
 	if err != nil {
 		return nil, static.NotFound
 	}
@@ -92,23 +92,7 @@ func (c *GigaViewer) Chapter(uri url.URL) (*static.Chapter, error) {
 }
 
 func (c *GigaViewer) Pages(chapterID any, imageChan chan<- static.Image) error {
-	connectorConfig, exists := config.Data.Sites[c.domain]
-	cookieOpts := func() request.OptsFn {
-		return func(cf *request.Config) {
-			if exists {
-				cf.Cookies = append(cf.Cookies, &http.Cookie{
-					Name:     "glsc",
-					Value:    connectorConfig.Session,
-					Path:     "/",
-					Domain:   c.domain,
-					Secure:   true,
-					HttpOnly: true,
-				})
-			}
-		}
-	}
-
-	res, err := request.Get[EpisodeResponse](fmt.Sprintf("https://%s/episode/%s.json", c.domain, chapterID), cookieOpts())
+	res, err := request.Get[EpisodeResponse](fmt.Sprintf("https://%s/episode/%s.json", c.domain, chapterID), c.withCookies())
 	if err != nil {
 		return static.NotFound
 	}
@@ -154,6 +138,23 @@ func filterMainPages(pages []EpisodePage) []EpisodePage {
 	}
 
 	return filtered
+}
+
+func (c *GigaViewer) withCookies() request.OptsFn {
+	connectorConfig, exists := config.Data.Sites[c.domain]
+	return func(cf *request.Config) {
+		if exists {
+			log.Trace().Msgf("used cookies for %s", c.domain)
+			cf.Cookies = append(cf.Cookies, &http.Cookie{
+				Name:     "glsc",
+				Value:    connectorConfig.Session,
+				Path:     "/",
+				Domain:   c.domain,
+				Secure:   true,
+				HttpOnly: true,
+			})
+		}
+	}
 }
 
 func New(domain string) *GigaViewer {

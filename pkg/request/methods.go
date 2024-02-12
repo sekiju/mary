@@ -3,6 +3,8 @@ package request
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"github.com/PuerkitoBio/goquery"
 	_ "image/jpeg"
 	_ "image/png"
 	"net/http"
@@ -28,15 +30,15 @@ func Get[T interface{}](url string, opts ...OptsFn) (Response[T], error) {
 		return responseWithBody, err
 	}
 
-	resp, err := client.Do(req)
-	responseWithBody.Status = resp.StatusCode
+	res, err := client.Do(req)
+	responseWithBody.Status = res.StatusCode
 	if err != nil {
 		return responseWithBody, err
 	}
 
-	defer resp.Body.Close()
+	defer res.Body.Close()
 
-	err = handleResponse(resp, &responseWithBody.Body)
+	err = handleResponse(res, &responseWithBody.Body)
 	if err != nil {
 		return responseWithBody, err
 	}
@@ -64,18 +66,48 @@ func Post[T interface{}](url string, opts ...OptsFn) (Response[T], error) {
 
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := client.Do(req)
-	responseWithBody.Status = resp.StatusCode
+	res, err := client.Do(req)
+	responseWithBody.Status = res.StatusCode
 	if err != nil {
 		return responseWithBody, err
 	}
 
-	defer resp.Body.Close()
+	defer res.Body.Close()
 
-	err = handleResponse(resp, &responseWithBody.Body)
+	err = handleResponse(res, &responseWithBody.Body)
 	if err != nil {
 		return responseWithBody, err
 	}
 
 	return responseWithBody, nil
+}
+
+func Document(url string, opts ...OptsFn) (*goquery.Document, error) {
+	cfg := defaultOpts()
+	for _, fn := range opts {
+		fn(&cfg)
+	}
+
+	req, err := newRequest("GET", url, nil, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer res.Body.Close()
+
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return nil, fmt.Errorf("request failed with status: %d", res.StatusCode)
+	}
+
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return doc, nil
 }
