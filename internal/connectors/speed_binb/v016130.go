@@ -105,7 +105,7 @@ func process016130(imgUrl, imgSrc, fileName string, ctbl, ptbl []string, imageCh
 			return nil, fmt.Errorf("prototype.vt() dont exists")
 		}
 
-		img, err := request.Get[image.Image](imgUrl, nil)
+		img, err := request.Get[image.Image](imgUrl)
 		if err != nil {
 			return nil, err
 		}

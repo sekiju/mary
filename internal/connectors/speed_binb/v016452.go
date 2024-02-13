@@ -58,7 +58,7 @@ func handleV016452(uri url.URL, apiUrl string, requestOpt request.OptsFn, imageC
 
 	log.Trace().Msgf("sbcGetCntntUrl: %s", sbcGetCntntUrl.String())
 
-	sbcGetCntnt, err := request.Get[SbcGetCntnt](sbcGetCntntUrl.String(), nil)
+	sbcGetCntnt, err := request.Get[SbcGetCntnt](sbcGetCntntUrl.String())
 	if err != nil {
 		return err
 	}

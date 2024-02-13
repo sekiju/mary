@@ -85,8 +85,8 @@ to obtain the `session` for each website will be provided below.
 
 To extract cookies from websites, I use [Cookie-Editor](https://cookie-editor.com).
 
-| Website / Websites group | Type   | Cookie Name / Header Name | Description                                  |
-|--------------------------|--------|--------------------------|----------------------------------------------|
-| GigaViewer group         | Cookie | glsc                     |                                              |
-| Fod | Header | zk-session-key           | Token from Android App / Reverses Enginering |
-                                                                      
+| Website / Websites group | Type   | Cookie Name / Header Name | Description                                   |
+|--------------------------|--------|---------------------------|-----------------------------------------------|
+| GigaViewer group         | Cookie | glsc                      |                                               |
+| Fod                      | Header | zk-session-key            | Token from Android App / Reverses Engineering |
+| Cmoa                     | Header | Cookie                    | Export all cookies as header with extension   |
