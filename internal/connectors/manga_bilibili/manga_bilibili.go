@@ -42,7 +42,7 @@ func (c *MangaBiliBili) ResolveType(uri url.URL) (static.UrlType, error) {
 	return "", errors.New("unable to resolve URL type")
 }
 
-func (c *MangaBiliBili) Book(uri url.URL) (*static.Book, error) {
+func (c *MangaBiliBili) Book(_ url.URL) (*static.Book, error) {
 	return nil, static.MassiveDownloaderUnsupportedErr
 }
 

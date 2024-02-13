@@ -25,11 +25,11 @@ func (c *Pixiv) Data() *static.ConnectorData {
 	}
 }
 
-func (c *Pixiv) ResolveType(uri url.URL) (static.UrlType, error) {
+func (c *Pixiv) ResolveType(_ url.URL) (static.UrlType, error) {
 	return static.UrlTypeChapter, nil
 }
 
-func (c *Pixiv) Book(uri url.URL) (*static.Book, error) {
+func (c *Pixiv) Book(_ url.URL) (*static.Book, error) {
 	return nil, static.MassiveDownloaderUnsupportedErr
 }
 

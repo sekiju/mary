@@ -24,7 +24,7 @@ func (c *GigaViewer) Data() *static.ConnectorData {
 	}
 }
 
-func (c *GigaViewer) ResolveType(uri url.URL) (static.UrlType, error) {
+func (c *GigaViewer) ResolveType(_ url.URL) (static.UrlType, error) {
 	return static.UrlTypeShared, nil
 }
 
