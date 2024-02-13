@@ -3,6 +3,7 @@ package connectors
 import (
 	"559/internal/connectors/comic_walker"
 	"559/internal/connectors/comic_webnewtype"
+	"559/internal/connectors/fod"
 	"559/internal/connectors/giga_viewer"
 	"559/internal/connectors/manga_bilibili"
 	"559/internal/connectors/pixiv"
@@ -27,9 +28,7 @@ func Add(connectors ...static.Connector) {
 }
 
 func init() {
-	Add(comic_walker.New(), pixiv.New(), comic_webnewtype.New(), manga_bilibili.New())
-
-	//Add(fod.New(), comic_walker.New(), pixiv.New(), comic_webnewtype.New())
+	Add(comic_walker.New(), pixiv.New(), comic_webnewtype.New(), manga_bilibili.New(), fod.New())
 
 	gigaViewerWebsites := []string{
 		"shonenjumpplus.com",
