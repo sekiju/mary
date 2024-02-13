@@ -7,6 +7,7 @@ import (
 	"559/internal/connectors/giga_viewer"
 	"559/internal/connectors/manga_bilibili"
 	"559/internal/connectors/pixiv"
+	"559/internal/connectors/speed_binb/comic_valkyrie"
 	"559/internal/static"
 )
 
@@ -28,7 +29,14 @@ func Add(connectors ...static.Connector) {
 }
 
 func init() {
-	Add(comic_walker.New(), pixiv.New(), comic_webnewtype.New(), manga_bilibili.New(), fod.New())
+	Add(
+		comic_walker.New(),
+		pixiv.New(),
+		comic_webnewtype.New(),
+		manga_bilibili.New(),
+		fod.New(),
+		comic_valkyrie.New(),
+	)
 
 	gigaViewerWebsites := []string{
 		"shonenjumpplus.com",
@@ -51,7 +59,7 @@ func init() {
 	for _, domain := range gigaViewerWebsites {
 		Add(giga_viewer.New(domain))
 	}
-	//
+
 	//speedBinbWebsites := []string{
 	//	"storia.takeshobo.co.jp",
 	//	"www.comic-valkyrie.com",
