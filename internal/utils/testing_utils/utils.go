@@ -1,9 +1,10 @@
 package testing_utils
 
 import (
+	"559/internal/utils"
+	"559/pkg/request"
+	"fmt"
 	"image"
-	"io"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -12,7 +13,7 @@ import (
 	"testing"
 )
 
-func getAsset(path, url string) (image.Image, error) {
+func getAsset(path, uri string) (image.Image, error) {
 	if _, err := os.Stat(path); err == nil {
 		file, err := os.Open(path)
 		if err != nil {
@@ -22,42 +23,23 @@ func getAsset(path, url string) (image.Image, error) {
 
 		img, _, err := image.Decode(file)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("err: %v", err)
 		}
 
 		return img, nil
 	}
 
-	err := os.MkdirAll(filepath.Dir(path), os.ModePerm)
+	img, err := request.Get[image.Image](uri)
 	if err != nil {
 		return nil, err
 	}
 
-	file, err := os.Create(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	response, err := http.Get(url)
+	err = utils.WriteImage(path, img.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	defer response.Body.Close()
-
-	_, err = io.Copy(file, response.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	file.Seek(0, io.SeekStart)
-	img, _, err := image.Decode(file)
-	if err != nil {
-		return nil, err
-	}
-
-	return img, nil
+	return img.Body, nil
 }
 
 func rootFolder(t *testing.T) func() {

@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/corona10/goimagehash"
+	"github.com/rs/zerolog/log"
 	"image"
 	"net/url"
 	"strings"
@@ -65,11 +66,12 @@ func Connector(t *testing.T, c static.Connector, assetUrl, chapterUrl string) {
 		t.Fatalf("failed to decode image: %s", err)
 	}
 
-	connectorFolder := strings.Replace(c.Data().Domain, ".", "_", -1)
-	assetPath := fmt.Sprintf("tests/assets/%s.%s", connectorFolder, format)
+	connectorName := strings.Replace(c.Data().Domain, ".", "_", -1)
+	assetPath := fmt.Sprintf("tests/assets/%s.%s", connectorName, format)
 
 	expected, err := getAsset(assetPath, assetUrl)
 	if err != nil {
+		log.Trace().Msgf("path: %s | url: %s", assetPath, assetUrl)
 		t.Fatal(err)
 	}
 
