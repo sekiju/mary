@@ -10,6 +10,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"net/http"
 	"net/url"
+	"regexp"
 )
 
 type GigaViewer struct {
@@ -47,22 +48,13 @@ func (c *GigaViewer) Book(uri url.URL) (*static.Book, error) {
 
 	chapters := make([]static.Chapter, 0)
 	for _, item := range feed.Items {
-		chapterResponse, err := request.Get[EpisodeResponse](item.Link+".json", c.withCookies())
+		chapterUrl, _ := url.Parse(item.Link)
+		chapter, err := c.Chapter(*chapterUrl)
 		if err != nil {
-			return nil, static.NotFoundErr
+			return nil, err
 		}
 
-		chapter := static.Chapter{
-			ID:    chapterResponse.Body.ReadableProduct.Id,
-			Title: chapterResponse.Body.ReadableProduct.Title,
-			Error: nil,
-		}
-
-		if !chapterResponse.Body.ReadableProduct.IsPublic && !chapterResponse.Body.ReadableProduct.HasPurchased {
-			chapter.Error = static.PaidChapterErr
-		}
-
-		chapters = append(chapters, chapter)
+		chapters = append(chapters, *chapter)
 	}
 
 	return &static.Book{
@@ -78,8 +70,13 @@ func (c *GigaViewer) Chapter(uri url.URL) (*static.Chapter, error) {
 		return nil, static.NotFoundErr
 	}
 
+	credentials, err := extractValuesFromURL(uri)
+	if err != nil {
+		return nil, err
+	}
+
 	chapter := static.Chapter{
-		ID:    res.Body.ReadableProduct.Id,
+		ID:    credentials,
 		Title: res.Body.ReadableProduct.Title,
 		Error: nil,
 	}
@@ -92,7 +89,9 @@ func (c *GigaViewer) Chapter(uri url.URL) (*static.Chapter, error) {
 }
 
 func (c *GigaViewer) Pages(chapterID any, imageChan chan<- static.Image) error {
-	res, err := request.Get[EpisodeResponse](fmt.Sprintf("https://%s/episode/%s.json", c.domain, chapterID), c.withCookies())
+	credentials := chapterID.(*Credentials)
+
+	res, err := request.Get[EpisodeResponse](fmt.Sprintf("https://%s/%s/%s.json", c.domain, credentials.Type, credentials.ID), c.withCookies())
 	if err != nil {
 		return static.NotFoundErr
 	}
@@ -155,6 +154,21 @@ func (c *GigaViewer) withCookies() request.OptsFn {
 			})
 		}
 	}
+}
+
+func extractValuesFromURL(uri url.URL) (*Credentials, error) {
+	pattern := `(magazine|episode)\/(\d+)`
+	re := regexp.MustCompile(pattern)
+	matches := re.FindStringSubmatch(uri.String())
+
+	if len(matches) != 3 {
+		return nil, fmt.Errorf("invalid URL format")
+	}
+
+	return &Credentials{
+		Type: matches[1],
+		ID:   matches[2],
+	}, nil
 }
 
 func New(domain string) *GigaViewer {

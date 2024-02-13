@@ -29,3 +29,9 @@ type EpisodePage struct {
 	Src  string `json:"src,omitempty"`
 	Type string `json:"type"`
 }
+
+type Credentials struct {
+	/// Type can be 'magazine' or 'episode'.
+	Type string
+	ID   string
+}
