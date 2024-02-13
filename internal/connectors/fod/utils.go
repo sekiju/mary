@@ -41,7 +41,7 @@ func descrambleImage(img image.Image, key string) []byte {
 	}
 
 	buf := new(bytes.Buffer)
-	jpeg.Encode(buf, descrambledImg, nil)
+	_ = jpeg.Encode(buf, descrambledImg, nil)
 
 	return buf.Bytes()
 }
