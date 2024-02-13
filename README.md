@@ -32,6 +32,7 @@
 - [www.comic-valkyrie.com](https://www.comic-valkyrie.com)
 - [cmoa.jp](https://cmoa.jp)
 - [yanmaga.jp](https://yanmaga.jp)
+- [manga.bilibili.com](https://manga.bilibili.com)
 
 ## Config
 
