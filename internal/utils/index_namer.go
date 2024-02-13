@@ -5,20 +5,20 @@ import (
 	"strings"
 )
 
-type IndexNameFormatter struct {
+type IndexNamer struct {
 	pad string
 }
 
-func NewIndexNameFormatter(pagesCount int) *IndexNameFormatter {
+func NewIndexNamer(pagesCount int) *IndexNamer {
 	count := 999
 	if pagesCount > 0 {
 		count = pagesCount
 	}
 	pad := strings.Repeat("0", len(fmt.Sprint(count)))
-	return &IndexNameFormatter{pad: pad}
+	return &IndexNamer{pad: pad}
 }
 
-func (pn *IndexNameFormatter) GetName(i int, ext string) string {
+func (pn *IndexNamer) Get(i int, ext string) string {
 	str := fmt.Sprint(i)
 	return pn.pad[:len(pn.pad)-len(str)] + str + ext
 }

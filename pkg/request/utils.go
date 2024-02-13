@@ -6,46 +6,7 @@ import (
 	"image"
 	"io"
 	"net/http"
-	"net/url"
-	"path"
-	"strings"
 )
-
-func JoinURL(base string, paths ...string) string {
-	p := path.Join(paths...)
-	return fmt.Sprintf("%s/%s", strings.TrimRight(base, "/"), strings.TrimLeft(p, "/"))
-}
-
-func ExportURLQueries(path string) (string, url.Values) {
-	queries := make(map[string][]string)
-
-	parts := strings.Split(path, "?")
-	if len(parts) == 2 {
-		queryPart := parts[1]
-		parsedQuery, err := url.ParseQuery(queryPart)
-		if err != nil {
-			fmt.Println("Error parsing URL:", err)
-			return "", nil
-		}
-
-		for key, values := range parsedQuery {
-			if len(values) > 0 {
-				queries[key] = values
-			}
-		}
-	}
-
-	return parts[0], queries
-}
-
-func defaultConfig() *Config {
-	return &Config{
-		Headers: map[string]string{
-			"user-agent": defaultUserAgent,
-		},
-		Cookies: make([]*http.Cookie, 0),
-	}
-}
 
 func newRequest(method, url string, body io.Reader, c Config) (*http.Request, error) {
 	req, err := http.NewRequest(method, url, body)
@@ -67,20 +28,14 @@ func newRequest(method, url string, body io.Reader, c Config) (*http.Request, er
 	return req, nil
 }
 
-func handleResponse(resp *http.Response, r interface{}) error {
-	defer func() {
-		if resp.Body != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("request failed with status: %d", resp.StatusCode)
+func handleResponse(res *http.Response, r interface{}) error {
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return fmt.Errorf("request failed with status: %d", res.StatusCode)
 	}
 
-	switch resp.Header.Get("content-type") {
+	switch res.Header.Get("content-type") {
 	case "application/json", "application/json; charset=utf-8", "application/json; charset=UTF-8":
-		body, err := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			return err
 		}
@@ -90,19 +45,38 @@ func handleResponse(resp *http.Response, r interface{}) error {
 			return err
 		}
 	case "image/png", "image/jpeg":
-		img, _, err := image.Decode(resp.Body)
+		switch v := r.(type) {
+		case *image.Image:
+			img, _, err := image.Decode(res.Body)
+			if err != nil {
+				return err
+			}
+
+			*v = img
+		case *[]byte:
+			body, err := io.ReadAll(res.Body)
+			if err != nil {
+				return err
+			}
+
+			*v = body
+		default:
+			return fmt.Errorf("unexpected type for image decoding")
+		}
+	case "text/html", "text/html; charset=utf-8", "text/html; charset=UTF-8":
+		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			return err
 		}
 
 		switch v := r.(type) {
-		case *image.Image:
-			*v = img
+		case *string:
+			*v = string(body)
 		default:
-			return fmt.Errorf("unexpected type for image decoding")
+			return fmt.Errorf("unexpected type for HTML response body")
 		}
 	default:
-		body, err := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			return err
 		}
@@ -111,7 +85,7 @@ func handleResponse(resp *http.Response, r interface{}) error {
 		case *[]byte:
 			*v = body
 		default:
-			return fmt.Errorf("unexpected type for response body")
+			return fmt.Errorf("unexpected type for response body, response: %d", res.StatusCode)
 		}
 	}
 

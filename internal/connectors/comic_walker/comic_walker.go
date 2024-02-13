@@ -1,70 +1,122 @@
 package comic_walker
 
 import (
-	"559/internal/connectors"
+	"559/internal/static"
 	"559/internal/utils"
 	"559/pkg/request"
-	"bytes"
 	"encoding/hex"
 	"fmt"
-	"image"
-	"image/jpeg"
+	"github.com/rs/zerolog/log"
 	_ "image/jpeg"
 	_ "image/png"
 	"net/url"
+	"regexp"
 )
 
 type ComicWalker struct {
-	*connectors.Base
+	domain string
 }
 
 func New() *ComicWalker {
 	return &ComicWalker{
-		Base: connectors.NewBase("comic-walker.com"),
+		domain: "comic-walker.com",
 	}
 }
 
-func (c *ComicWalker) Context() *connectors.Base {
-	return c.Base
+func (c *ComicWalker) Data() *static.ConnectorData {
+	return &static.ConnectorData{
+		Domain:               c.domain,
+		AuthorizationStatus:  static.AuthorizationStatusForBookmarks,
+		ChapterListAvailable: false,
+	}
 }
 
-func (c *ComicWalker) Pages(uri url.URL, imageChan chan<- connectors.ReaderImage) error {
-	// todo: session support
+func (c *ComicWalker) ResolveType(uri url.URL) (static.UrlType, error) {
+	bookRegex := regexp.MustCompile(`/contents/detail/`)
+	chapterRegex := regexp.MustCompile(`/viewer/`)
 
+	if bookRegex.MatchString(uri.Path) {
+		return static.UrlTypeBook, nil
+	} else if chapterRegex.MatchString(uri.Path) {
+		return static.UrlTypeChapter, nil
+	}
+
+	return "", static.UnknownUrlTypeErr
+}
+
+func (c *ComicWalker) Book(uri url.URL) (*static.Book, error) {
+	reqUrl := fmt.Sprintf("https://comicwalker-api.nicomanga.jp/api/v1/comicwalker/contents/%s", utils.LastURLSegment(uri.Path))
+	res, err := request.Get[BookResponse](reqUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Trace().Msgf("%s | status code: %d", reqUrl, res.Status)
+
+	return &static.Book{
+		Title:    res.Body.Data.Result.Meta.Title,
+		Cover:    &res.Body.Data.Result.Meta.MainImageUrl,
+		Chapters: nil,
+	}, nil
+}
+
+func (c *ComicWalker) Chapter(uri url.URL) (*static.Chapter, error) {
 	if !uri.Query().Has("cid") {
-		return fmt.Errorf("url dont have cid")
+		return nil, fmt.Errorf("url dont have cid")
 	}
 
-	resp, err := request.Get[FramesResponse](fmt.Sprintf("https://comicwalker-api.nicomanga.jp/api/v1/comicwalker/episodes/%s/frames", uri.Query().Get("cid")), nil)
+	res, err := request.Get[ChapterResponse](fmt.Sprintf("https://comicwalker-api.nicomanga.jp/api/v1/comicwalker/episodes/%s", uri.Query().Get("cid")))
+	if err != nil {
+		return nil, err
+	}
+
+	return &static.Chapter{
+		ID:    uri.Query().Get("cid"),
+		Title: res.Body.Data.Result.Title,
+		Error: nil,
+	}, nil
+}
+
+func (c *ComicWalker) Pages(chapterID any, imageChan chan<- static.Image) error {
+	response, err := request.Get[FramesResponse](fmt.Sprintf("https://comicwalker-api.nicomanga.jp/api/v1/comicwalker/episodes/%s/frames", chapterID))
 	if err != nil {
 		return err
 	}
 
-	fnf := utils.NewIndexNameFormatter(len(resp.Data.Result))
-	for i, page := range resp.Data.Result {
-		processPage(page.Meta.SourceUrl, page.Meta.DrmHash, fnf.GetName(i, ".jpg"), imageChan)
+	indexNamer := utils.NewIndexNamer(len(response.Body.Data.Result))
+	for i, page := range response.Body.Data.Result {
+		if page.Meta.DrmHash != nil {
+			log.Trace().Msgf("url: %s | hash: %s", page.Meta.SourceUrl, *page.Meta.DrmHash)
+		} else {
+			log.Trace().Msgf("url: %s | hash is nil", page.Meta.SourceUrl)
+		}
+
+		processPage(page.Meta.SourceUrl, indexNamer.Get(i, ".jpg"), page.Meta.DrmHash, imageChan)
 	}
 
 	close(imageChan)
-
 	return nil
 }
 
-func processPage(uri, hash string, fileName string, imageChan chan<- connectors.ReaderImage) {
-	var fn connectors.ImageFunction
-	fn = func() (image.Image, error) {
-		img, err := request.Get[[]byte](uri, nil)
+func processPage(uri, fileName string, hash *string, imageChan chan<- static.Image) {
+	var fn static.ImageFn
+	fn = func() ([]byte, error) {
+		res, err := request.Get[[]byte](uri)
 		if err != nil {
 			return nil, err
 		}
 
-		return decodeImage(img, hash)
+		if hash != nil {
+			return decodeImage(res.Body, *hash)
+		} else {
+			return res.Body, nil
+		}
 	}
 
-	imageChan <- connectors.NewConnectorImage(fileName, &fn)
+	imageChan <- static.NewImage(fileName, &fn)
 }
 
-func decodeImage(b []byte, hash string) (image.Image, error) {
+func decodeImage(b []byte, hash string) ([]byte, error) {
 	key, err := generateKey(hash)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate %q key: %s", hash, err)
@@ -72,12 +124,7 @@ func decodeImage(b []byte, hash string) (image.Image, error) {
 
 	decrypted := xor(b, key)
 
-	img, err := jpeg.Decode(bytes.NewReader(decrypted))
-	if err != nil {
-		return nil, err
-	}
-
-	return img, nil
+	return decrypted, nil
 }
 
 func generateKey(t string) ([]byte, error) {

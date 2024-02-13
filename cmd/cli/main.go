@@ -3,23 +3,22 @@ package main
 import (
 	"559/internal/config"
 	"559/internal/connectors"
-	"559/internal/registry"
+	"559/internal/static"
+	"559/internal/utils"
 	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"image/jpeg"
-	"image/png"
 	"net/url"
 	"os"
 	"path/filepath"
 	"sync"
-	"time"
 )
 
 func main() {
 	err := run()
 	if err != nil {
 		log.Error().Msgf("%v", err)
+		fmt.Scanln()
 		os.Exit(1)
 	}
 
@@ -32,6 +31,10 @@ func run() error {
 	err := config.Load()
 	if err != nil {
 		return err
+	}
+
+	if !config.Data.Settings.Debug.Enable {
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
 
 	var arg string
@@ -56,88 +59,103 @@ func run() error {
 		return err
 	}
 
-	reader, err := registry.Default.FindReaderByDomain(uri.Hostname())
+	c, err := connectors.FindByDomain(uri.Hostname())
 	if err != nil {
 		return err
 	}
 
-	log.Info().Msgf("domain: %s | threads: %d", reader.Context().Domain, config.Data.Settings.Threads)
+	log.Info().Msgf("domain: %s | speed: %d image/s", c.Data().Domain, config.Data.Settings.Threads)
 
-	startTime := time.Now()
-	imageChan := make(chan connectors.ReaderImage)
+	urlType, err := c.ResolveType(*uri)
+	if err != nil {
+		return err
+	}
+
+	log.Info().Msgf("url type: %s", urlType)
+
+	imageChan := make(chan static.Image)
 	wg := &sync.WaitGroup{}
 
 	if config.Data.Settings.ClearOutputFolder {
-		err := os.RemoveAll(config.Data.Settings.OutputPath)
+		err = os.RemoveAll(config.Data.Settings.OutputPath)
 		if err != nil {
 			return err
 		}
 	}
 
-	go func() {
-		err = reader.Pages(*uri, imageChan)
-		if err != nil {
-			fmt.Println(err)
-			close(imageChan)
+	if urlType == "SHARED" {
+		if config.Data.Settings.TargetMethod != nil {
+			switch *config.Data.Settings.TargetMethod {
+			case "book":
+				urlType = "BOOK"
+			case "chapter":
+				urlType = "CHAPTER"
+			default:
+				urlType = "CHAPTER"
+				log.Warn().Msgf("unknown target_method, using CHAPTER downloader")
+			}
+		} else {
+			urlType = "CHAPTER"
+			log.Warn().Msgf("unknown settings.target_method in config.yaml, using CHAPTER downloader")
 		}
-	}()
-
-	err = os.MkdirAll(config.Data.Settings.OutputPath, os.ModePerm)
-	if err != nil {
-		return err
 	}
 
-	for i := 0; i < config.Data.Settings.Threads; i++ {
-		wg.Add(1)
+	switch urlType {
+	case "BOOK":
+		if !c.Data().ChapterListAvailable {
+			return fmt.Errorf("site don't supporting massive parsing")
+		}
+
+		return fmt.Errorf("book downloading not yet implemented")
+	case "CHAPTER":
+		chapter, err := c.Chapter(*uri)
+		if err != nil {
+			return err
+		}
+
+		if chapter.Error != nil {
+			return chapter.Error
+		}
+
 		go func() {
-			err := worker(config.Data.Settings.OutputPath, imageChan, wg)
+			err = c.Pages(chapter.ID, imageChan)
 			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
+				log.Error().Msgf("%v", err)
+				close(imageChan)
 			}
 		}()
+
+		err = os.MkdirAll(config.Data.Settings.OutputPath, os.ModePerm)
+		if err != nil {
+			return err
+		}
+
+		for i := 0; i < config.Data.Settings.Threads; i++ {
+			wg.Add(1)
+			go func() {
+				err := worker(config.Data.Settings.OutputPath, imageChan, wg)
+				if err != nil {
+					log.Error().Msgf("%v", err)
+					os.Exit(1)
+				}
+			}()
+		}
 	}
 
 	wg.Wait()
-
-	elapsedTime := time.Since(startTime)
-	log.Info().Msgf("Elapsed time %v\n", elapsedTime)
-
 	return nil
 }
 
-func worker(outputPath string, imageChan <-chan connectors.ReaderImage, wg *sync.WaitGroup) error {
+func worker(outputPath string, imageChan <-chan static.Image, wg *sync.WaitGroup) error {
 	defer wg.Done()
 
 	for i := range imageChan {
-		file, err := os.Create(filepath.Join(outputPath, i.FileName))
+		b, err := i.ImageFn()
 		if err != nil {
-			return fmt.Errorf("failed to create file: %s", err)
+			return err
 		}
 
-		img, err := i.Image()
-
-		ext := filepath.Ext(i.FileName)
-		if ext == "" {
-			return fmt.Errorf("file has no extension: %s", i.FileName)
-		}
-
-		switch ext {
-		case ".jpg", ".jpeg":
-			err := jpeg.Encode(file, img, nil)
-			if err != nil {
-				return fmt.Errorf("failed to jpeg encode: %s", err)
-			}
-		case ".png":
-			err := png.Encode(file, img)
-			if err != nil {
-				return fmt.Errorf("failed to png encode: %s", err)
-			}
-		default:
-			return fmt.Errorf("unsupported image format: %s", ext)
-		}
-
-		err = file.Close()
+		err = utils.WriteImageBytes(filepath.Join(outputPath, i.FileName), b)
 		if err != nil {
 			return err
 		}

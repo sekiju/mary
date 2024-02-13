@@ -1,6 +1,14 @@
+# IDE's
 .idea/
-tests/
+.vscode/
+
+# Runtime folders
 output/
 bin/
 
+# Debug
+tests/
+cover.out
+
+# Config
 config.yaml

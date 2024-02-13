@@ -1,34 +1,18 @@
 package speed_binb
 
 import (
-	"559/internal/config"
-	"559/internal/connectors"
+	"559/internal/static"
 	"559/pkg/request"
 	"net/url"
 	"strings"
 )
 
 type SpeedBinb struct {
-	*connectors.Base
+	domain string
 }
 
-func New(domain string) *SpeedBinb {
-	return &SpeedBinb{Base: connectors.NewBase(domain)}
-}
-
-func (s *SpeedBinb) Context() *connectors.Base {
-	return s.Base
-}
-
-func (s *SpeedBinb) Pages(uri url.URL, imageChan chan<- connectors.ReaderImage) error {
-	var c = request.Config{Headers: map[string]string{}}
-	connectorConfig, exists := config.Data.Sites[s.Domain]
-
-	if exists {
-		c.Headers["cookie"] = connectorConfig.Session
-	}
-
-	doc, err := request.GetDocument(uri.String(), &c)
+func (c *SpeedBinb) Pages(uri url.URL, imageChan chan<- static.Image, requestOpts *request.OptsFn) error {
+	doc, err := request.Document(uri.String(), unwrapRequestOpts(requestOpts))
 	if err != nil {
 		return err
 	}
@@ -43,7 +27,7 @@ func (s *SpeedBinb) Pages(uri url.URL, imageChan chan<- connectors.ReaderImage) 
 		uri.RawQuery = q.Encode()
 		return handleV016113(uri, ptbinb, imageChan)
 	} else if ptbinbExists && strings.Contains(ptbinb, "bibGetCntntInfo") && q.Has("u0") && q.Has("u1") {
-		return handleV016452(uri, ptbinb, &c, imageChan)
+		return handleV016452(uri, ptbinb, unwrapRequestOpts(requestOpts), imageChan)
 	} else if ptbinbExists && strings.Contains(ptbinb, "bibGetCntntInfo") && q.Has("u1") {
 		return handleV016201(uri, imageChan)
 	} else if ptbinbExists && strings.Contains(ptbinb, "bibGetCntntInfo") {
@@ -51,4 +35,16 @@ func (s *SpeedBinb) Pages(uri url.URL, imageChan chan<- connectors.ReaderImage) 
 	} else {
 		return handleV016061(uri, imageChan, pagesContent)
 	}
+}
+
+func unwrapRequestOpts(opts *request.OptsFn) request.OptsFn {
+	if opts == nil {
+		return func(config *request.Config) {}
+	}
+
+	return *opts
+}
+
+func New(domain string) *SpeedBinb {
+	return &SpeedBinb{domain: domain}
 }

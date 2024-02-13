@@ -2,71 +2,128 @@ package pixiv
 
 import (
 	"559/internal/config"
-	"559/internal/connectors"
+	"559/internal/static"
 	"559/internal/utils"
 	"559/pkg/request"
 	"fmt"
-	"image"
+	"github.com/rs/zerolog/log"
 	"net/http"
 	"net/url"
 	"path"
+	"path/filepath"
 )
 
 type Pixiv struct {
-	*connectors.Base
+	domain string
 }
 
-func New() *Pixiv {
-	return &Pixiv{
-		Base: connectors.NewBase("www.pixiv.net"),
+func (c *Pixiv) Data() *static.ConnectorData {
+	return &static.ConnectorData{
+		Domain:               c.domain,
+		AuthorizationStatus:  static.AuthorizationStatusOptional,
+		ChapterListAvailable: false,
 	}
 }
 
-func (p *Pixiv) Context() *connectors.Base {
-	return p.Base
+func (c *Pixiv) ResolveType(_ url.URL) (static.UrlType, error) {
+	return static.UrlTypeChapter, nil
 }
 
-func (p *Pixiv) Pages(uri url.URL, imageChan chan<- connectors.ReaderImage) error {
-	lastPart := path.Base(uri.Path)
+func (c *Pixiv) Book(_ url.URL) (*static.Book, error) {
+	return nil, static.MassiveDownloaderUnsupportedErr
+}
 
-	var httpConfig request.Config
-	connectorConfig, exists := config.Data.Sites[p.Domain]
+func (c *Pixiv) Chapter(uri url.URL) (*static.Chapter, error) {
+	id := utils.LastURLSegment(uri.Path)
 
-	if exists {
-		httpConfig.Cookies = []*http.Cookie{
-			{
+	illustUrl := fmt.Sprintf("https://www.pixiv.net/ajax/illust/%s", id)
+	log.Trace().Msgf("illustUrl: %s", illustUrl)
+
+	res, err := request.Get[IllustResponse](illustUrl, c.withCookies())
+	if err != nil {
+		return nil, fmt.Errorf("failed to access episode api: %s", err)
+	}
+
+	if res.Body.Error {
+		return nil, fmt.Errorf("error status")
+	}
+
+	chapter := static.Chapter{
+		ID:    id,
+		Title: res.Body.Body.Title,
+		Error: nil,
+	}
+
+	if res.Body.Body.NoLoginData != nil {
+		for _, tag := range res.Body.Body.Tags.Tags {
+			if tag.Tag == "R-18" {
+				chapter.Error = static.LoginRequiredErr
+			}
+		}
+	}
+
+	return &chapter, nil
+}
+
+func (c *Pixiv) Pages(chapterID any, imageChan chan<- static.Image) error {
+	pagesUrl := fmt.Sprintf("https://www.pixiv.net/ajax/illust/%s/pages", chapterID)
+	log.Trace().Msgf("pagesUrl: %s", pagesUrl)
+
+	res, err := request.Get[PagesResponse](pagesUrl, c.withCookies())
+	if err != nil {
+		return fmt.Errorf("failed to access episode api: %s", err)
+	}
+
+	if res.Body.Error {
+		return fmt.Errorf("error status")
+	}
+
+	indexNamer := utils.NewIndexNamer(len(res.Body.Body))
+	for i, page := range res.Body.Body {
+		log.Trace().Msgf("url: %s", page.Urls.Original)
+
+		ext := filepath.Ext(path.Base(page.Urls.Original))
+
+		processPage(page.Urls.Original, indexNamer.Get(i, ext), imageChan)
+	}
+
+	close(imageChan)
+	return nil
+}
+
+func processPage(uri string, fileName string, imageChan chan<- static.Image) {
+	var fn static.ImageFn
+	fn = func() ([]byte, error) {
+		res, err := request.Get[[]byte](uri, request.SetHeader("Referer", "https://pixiv.net/"))
+		if err != nil {
+			return nil, err
+		}
+
+		return res.Body, nil
+	}
+
+	imageChan <- static.NewImage(fileName, &fn)
+}
+
+func (c *Pixiv) withCookies() request.OptsFn {
+	connectorConfig, exists := config.Data.Sites[c.domain]
+	return func(cf *request.Config) {
+		if exists {
+			log.Trace().Msg("used cookies for .pixiv.net")
+			cf.Cookies = append(cf.Cookies, &http.Cookie{
 				Name:     "PHPSESSID",
 				Value:    connectorConfig.Session,
 				Path:     "/",
 				Domain:   ".pixiv.net",
 				Secure:   true,
 				HttpOnly: true,
-			},
+			})
 		}
 	}
-
-	resp, err := request.Get[PagesResponse](fmt.Sprintf("https://www.pixiv.net/ajax/illust/%s/pages", lastPart), &httpConfig)
-	if err != nil {
-		return fmt.Errorf("failed to access episode api: %s", err)
-	}
-
-	fnf := utils.NewIndexNameFormatter(len(resp.Body))
-	for i, page := range resp.Body {
-		processPage(page.Urls.Original, fnf.GetName(i, ".jpg"), imageChan)
-	}
-
-	close(imageChan)
-
-	return nil
 }
 
-func processPage(uri string, fileName string, imageChan chan<- connectors.ReaderImage) {
-	var fn connectors.ImageFunction
-	fn = func() (image.Image, error) {
-		return request.Get[image.Image](uri, &request.Config{Headers: map[string]string{
-			"Referer": "https://pixiv.net/",
-		}})
+func New() *Pixiv {
+	return &Pixiv{
+		domain: "www.pixiv.net",
 	}
-
-	imageChan <- connectors.NewConnectorImage(fileName, &fn)
 }

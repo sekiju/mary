@@ -344,7 +344,7 @@ func (s SpeedbinbH) vt() bool {
 	return true
 }
 
-func (s SpeedbinbH) bt(t image.Rectangle) bool {
+func (s SpeedbinbH) bt(_ image.Rectangle) bool {
 	return false
 }
 

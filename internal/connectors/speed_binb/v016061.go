@@ -1,28 +1,33 @@
 package speed_binb
 
 import (
-	"559/internal/connectors"
+	"559/internal/static"
 	"559/internal/utils"
 	"559/pkg/request"
+	"bytes"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/rs/zerolog/log"
 	"image"
 	"image/draw"
+	"image/jpeg"
 	"net/url"
 	"regexp"
 	"strconv"
 )
 
-func handleV016061(uri url.URL, imageChan chan<- connectors.ReaderImage, selection *goquery.Selection) error {
+func handleV016061(uri url.URL, imageChan chan<- static.Image, selection *goquery.Selection) error {
+	log.Trace().Msg("bimb version 016061")
+
 	pages := selection.Find("div[data-ptimg$=\"ptimg.json\"]").Map(func(i int, s *goquery.Selection) string {
 		text, _ := s.Attr("data-ptimg")
 		return text
 	})
 
 	if len(pages) > 0 {
-		fnf := utils.NewIndexNameFormatter(len(pages))
+		indexNamer := utils.NewIndexNamer(len(pages))
 		for i := 0; i < len(pages); i++ {
-			process016061(uri, pages[i], fnf.GetName(i, ".jpg"), imageChan)
+			process016061(uri, pages[i], indexNamer.Get(i, ".jpg"), imageChan)
 		}
 	} else {
 		return fmt.Errorf("unsupported speedbinb reader")
@@ -32,26 +37,26 @@ func handleV016061(uri url.URL, imageChan chan<- connectors.ReaderImage, selecti
 	return nil
 }
 
-func process016061(uri url.URL, page string, fileName string, imageChan chan<- connectors.ReaderImage) {
-	var fn connectors.ImageFunction
-	fn = func() (image.Image, error) {
-		ptimg, err := request.Get[Ptimg](request.JoinURL(uri.String(), page), nil)
+func process016061(uri url.URL, page string, fileName string, imageChan chan<- static.Image) {
+	var fn static.ImageFn
+	fn = func() ([]byte, error) {
+		ptimgResponse, err := request.Get[Ptimg](utils.JoinURL(uri.String(), page))
 		if err != nil {
 			return nil, err
 		}
 
-		img, err := request.Get[image.Image](request.JoinURL(uri.String(), "data", ptimg.Resources.I.Src), nil)
+		imageResponse, err := request.Get[image.Image](utils.JoinURL(uri.String(), "data", ptimgResponse.Body.Resources.I.Src))
 		if err != nil {
 			return nil, err
 		}
 
-		return descramble016061(img, ptimg.Views), nil
+		return descramble016061(imageResponse.Body, ptimgResponse.Body.Views), nil
 	}
 
-	imageChan <- connectors.NewConnectorImage(fileName, &fn)
+	imageChan <- static.NewImage(fileName, &fn)
 }
 
-func descramble016061(img image.Image, views []PtimgView) image.Image {
+func descramble016061(img image.Image, views []PtimgView) []byte {
 	descrambledImg := image.NewRGBA(image.Rect(0, 0, views[0].Width, views[0].Height))
 
 	re := regexp.MustCompile("[:,+>]")
@@ -69,5 +74,8 @@ func descramble016061(img image.Image, views []PtimgView) image.Image {
 		draw.Draw(descrambledImg, dstRect, img, drawRect.Min, draw.Src)
 	}
 
-	return descrambledImg
+	buf := new(bytes.Buffer)
+	_ = jpeg.Encode(buf, descrambledImg, nil)
+
+	return buf.Bytes()
 }

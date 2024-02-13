@@ -1,90 +1,18 @@
 package fod
 
 import (
-	"559/internal/connectors"
-	"559/pkg/request"
-	"encoding/json"
+	"bytes"
 	"fmt"
 	"image"
 	"image/draw"
-	"log"
+	"image/jpeg"
 	"math"
 	"net/url"
-	"os"
 	"regexp"
 	"strings"
 )
 
-func processPage(uri, key string, fileName string, imageChan chan<- connectors.ReaderImage) {
-	var fn connectors.ImageFunction
-	fn = func() (image.Image, error) {
-		img, err := request.Get[image.Image](uri, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		return descrambleImage(img, key), nil
-	}
-
-	imageChan <- connectors.NewConnectorImage(fileName, &fn)
-}
-
-func processOriginalPage(uri, fileName string, imageChan chan<- connectors.ReaderImage) {
-	var fn connectors.ImageFunction
-	fn = func() (image.Image, error) {
-		return request.Get[image.Image](uri, nil)
-	}
-
-	imageChan <- connectors.NewConnectorImage(fileName, &fn)
-}
-
-func processKeys(imageUrl string, keys []string) error {
-	img, err := request.Get[image.Image](imageUrl, nil)
-	if err != nil {
-		return err
-	}
-
-	wi, hi := img.Bounds().Size().X, img.Bounds().Size().Y
-
-	byteKeys := make([][]int, len(keys))
-
-	for i, key := range keys {
-		m := int(math.Floor(float64(wi / 96)))
-		o := m * int(math.Floor(float64(hi/128)))
-
-		s := make([]int, o)
-		for a := 0; a < o; a++ {
-			s[a] = a
-		}
-
-		s = NewRandomizer(key).Shuffle(s)
-
-		byteKeys[i] = s
-	}
-
-	jsonData, err := json.Marshal(byteKeys)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	filePath := "output/keys.json"
-
-	err = os.WriteFile(filePath, jsonData, 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("Data written to %s\n", filePath)
-	return nil
-}
-
-/*
-Options:
-	:shiftRemainingEdgeDrawingPosition = false (always)
-	:needsPatchForCanvasGapBug (?)
-*/
-
-func descrambleImage(img image.Image, key string) image.Image {
+func descrambleImage(img image.Image, key string) []byte {
 	wi, hi := img.Bounds().Size().X, img.Bounds().Size().Y
 
 	descrambledImg := image.NewRGBA(image.Rect(0, 0, wi, hi))
@@ -112,26 +40,32 @@ func descrambleImage(img image.Image, key string) image.Image {
 		draw.Draw(descrambledImg, dstRect, img, drawRect.Min, draw.Src)
 	}
 
-	return descrambledImg
+	buf := new(bytes.Buffer)
+	_ = jpeg.Encode(buf, descrambledImg, nil)
+
+	return buf.Bytes()
 }
 
-func extractValuesFromURL(uri url.URL) (string, string, error) {
+func extractValuesFromURL(uri url.URL) (*BookCredentialsRequest, error) {
 	pattern := `https://manga\.fod\.fujitv\.co\.jp/(viewer|books)/(\d+)(?:/([A-Z0-9]+))?`
 	re := regexp.MustCompile(pattern)
 	matches := re.FindStringSubmatch(uri.String())
 
 	if len(matches) < 3 {
-		return "", "", fmt.Errorf("invalid URL format")
+		return nil, fmt.Errorf("invalid URL format")
 	}
 
-	value1 := matches[2] // manga number
+	bookId := matches[2]
 
-	var value2 string
+	var episodeId string
 	if len(matches) == 4 {
-		value2 = matches[3]
+		episodeId = matches[3]
 	}
 
-	return value1, value2, nil
+	return &BookCredentialsRequest{
+		BookID:    bookId,
+		EpisodeID: episodeId,
+	}, nil
 }
 
 func normalizeUrl(input string) string {
