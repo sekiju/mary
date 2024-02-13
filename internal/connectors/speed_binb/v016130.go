@@ -35,7 +35,7 @@ func handleV016130(uri url.URL, apiUrl string, imageChan chan<- static.Image) er
 
 	log.Trace().Msgf("bibGetCntntInfo: %s", uri.String())
 
-	bibGetCntntInfoItems, err := request.Get[BibGetCntntInfo16130](uri.String(), nil)
+	bibGetCntntInfoItems, err := request.Get[BibGetCntntInfo16130](uri.String())
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func handleV016130(uri url.URL, apiUrl string, imageChan chan<- static.Image) er
 
 		log.Trace().Msgf("sbcGetCntntUrl: %s", sbcGetCntntUrl.String())
 
-		sbcGetCntnt, err := request.Get[SbcGetCntnt](sbcGetCntntUrl.String(), nil)
+		sbcGetCntnt, err := request.Get[SbcGetCntnt](sbcGetCntntUrl.String())
 		if err != nil {
 			return err
 		}

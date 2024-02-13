@@ -9,6 +9,8 @@ import (
 	"559/internal/connectors/pixiv"
 	"559/internal/connectors/speed_binb/cmoa"
 	"559/internal/connectors/speed_binb/comic_valkyrie"
+	"559/internal/connectors/speed_binb/storia_takeshobo"
+	"559/internal/connectors/speed_binb/yanmaga"
 	"559/internal/static"
 )
 
@@ -38,6 +40,8 @@ func init() {
 		fod.New(),
 		comic_valkyrie.New(),
 		cmoa.New(),
+		storia_takeshobo.New(),
+		yanmaga.New(),
 	)
 
 	gigaViewerWebsites := []string{
@@ -61,14 +65,4 @@ func init() {
 	for _, domain := range gigaViewerWebsites {
 		Add(giga_viewer.New(domain))
 	}
-
-	//speedBinbWebsites := []string{
-	//	"storia.takeshobo.co.jp",
-	//	"www.comic-valkyrie.com",
-	//	"www.cmoa.jp",
-	//	"yanmaga.jp",
-	//}
-	//for _, domain := range speedBinbWebsites {
-	//	Add(speed_binb.New(domain))
-	//}
 }
