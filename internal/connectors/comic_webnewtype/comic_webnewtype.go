@@ -34,7 +34,7 @@ func (c *ComicWebNewtype) ResolveType(uri url.URL) (static.UrlType, error) {
 		return static.UrlTypeChapter, nil
 	}
 
-	return "", static.UnknownUrlType
+	return "", static.UnknownUrlTypeErr
 }
 
 func (c *ComicWebNewtype) Book(uri url.URL) (*static.Book, error) {

@@ -41,7 +41,7 @@ func (c *ComicWalker) ResolveType(uri url.URL) (static.UrlType, error) {
 		return static.UrlTypeChapter, nil
 	}
 
-	return "", static.UnknownUrlType
+	return "", static.UnknownUrlTypeErr
 }
 
 func (c *ComicWalker) Book(uri url.URL) (*static.Book, error) {

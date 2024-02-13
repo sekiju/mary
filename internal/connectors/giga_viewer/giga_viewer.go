@@ -31,7 +31,7 @@ func (c *GigaViewer) ResolveType(uri url.URL) (static.UrlType, error) {
 func (c *GigaViewer) Book(uri url.URL) (*static.Book, error) {
 	res, err := request.Get[EpisodeResponse](uri.String()+".json", c.withCookies())
 	if err != nil {
-		return nil, static.NotFound
+		return nil, static.NotFoundErr
 	}
 
 	rssText, err := request.Get[string](fmt.Sprintf("https://shonenjumpplus.com/rss/series/%s", res.Body.ReadableProduct.Series.Id))
@@ -49,7 +49,7 @@ func (c *GigaViewer) Book(uri url.URL) (*static.Book, error) {
 	for _, item := range feed.Items {
 		chapterResponse, err := request.Get[EpisodeResponse](item.Link+".json", c.withCookies())
 		if err != nil {
-			return nil, static.NotFound
+			return nil, static.NotFoundErr
 		}
 
 		chapter := static.Chapter{
@@ -59,7 +59,7 @@ func (c *GigaViewer) Book(uri url.URL) (*static.Book, error) {
 		}
 
 		if !chapterResponse.Body.ReadableProduct.IsPublic && !chapterResponse.Body.ReadableProduct.HasPurchased {
-			chapter.Error = static.PaidChapter
+			chapter.Error = static.PaidChapterErr
 		}
 
 		chapters = append(chapters, chapter)
@@ -75,7 +75,7 @@ func (c *GigaViewer) Book(uri url.URL) (*static.Book, error) {
 func (c *GigaViewer) Chapter(uri url.URL) (*static.Chapter, error) {
 	res, err := request.Get[EpisodeResponse](uri.String()+".json", c.withCookies())
 	if err != nil {
-		return nil, static.NotFound
+		return nil, static.NotFoundErr
 	}
 
 	chapter := static.Chapter{
@@ -85,7 +85,7 @@ func (c *GigaViewer) Chapter(uri url.URL) (*static.Chapter, error) {
 	}
 
 	if !res.Body.ReadableProduct.IsPublic && !res.Body.ReadableProduct.HasPurchased {
-		chapter.Error = static.PaidChapter
+		chapter.Error = static.PaidChapterErr
 	}
 
 	return &chapter, nil
@@ -94,11 +94,11 @@ func (c *GigaViewer) Chapter(uri url.URL) (*static.Chapter, error) {
 func (c *GigaViewer) Pages(chapterID any, imageChan chan<- static.Image) error {
 	res, err := request.Get[EpisodeResponse](fmt.Sprintf("https://%s/episode/%s.json", c.domain, chapterID), c.withCookies())
 	if err != nil {
-		return static.NotFound
+		return static.NotFoundErr
 	}
 
 	if !res.Body.ReadableProduct.IsPublic && !res.Body.ReadableProduct.HasPurchased {
-		return static.PaidChapter
+		return static.PaidChapterErr
 	}
 
 	pages := filterMainPages(res.Body.ReadableProduct.PageStructure.Pages)

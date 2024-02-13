@@ -42,10 +42,10 @@ settings:
   debug:
     enable: true
     url: https://shonenjumpplus.com/episode/14079602755375556618
-  output_path: output/
-  clear_output_folder: true
+  outputPath: output/
+  clearOutputFolder: true
   threads: 6
-  target_method: chapter # chapter OR book
+  targetMethod: chapter # chapter OR book
 
 sites:
   manga.fod.fujitv.co.jp:

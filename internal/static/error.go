@@ -3,10 +3,10 @@ package static
 import "errors"
 
 var (
-	UnsupportedWebsiteError      = errors.New("unsupported website")
-	LoginRequiredError           = errors.New("login required")
-	UnknownUrlType               = errors.New("unknown URL type")
-	NotFound                     = errors.New("book/chapter not found")
-	PaidChapter                  = errors.New("paid chapter")
-	MassiveDownloaderUnsupported = errors.New("massive downloader unsupported")
+	UnsupportedWebsiteErr           = errors.New("unsupported website")
+	LoginRequiredErr                = errors.New("login required")
+	UnknownUrlTypeErr               = errors.New("unknown URL type")
+	NotFoundErr                     = errors.New("book/chapter not found")
+	PaidChapterErr                  = errors.New("paid chapter")
+	MassiveDownloaderUnsupportedErr = errors.New("massive downloader unsupported")
 )

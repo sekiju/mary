@@ -30,7 +30,7 @@ func (c *Pixiv) ResolveType(uri url.URL) (static.UrlType, error) {
 }
 
 func (c *Pixiv) Book(uri url.URL) (*static.Book, error) {
-	return nil, static.MassiveDownloaderUnsupported
+	return nil, static.MassiveDownloaderUnsupportedErr
 }
 
 func (c *Pixiv) Chapter(uri url.URL) (*static.Chapter, error) {
@@ -57,7 +57,7 @@ func (c *Pixiv) Chapter(uri url.URL) (*static.Chapter, error) {
 	if res.Body.Body.NoLoginData != nil {
 		for _, tag := range res.Body.Body.Tags.Tags {
 			if tag.Tag == "R-18" {
-				chapter.Error = static.LoginRequiredError
+				chapter.Error = static.LoginRequiredErr
 			}
 		}
 	}
@@ -82,8 +82,7 @@ func (c *Pixiv) Pages(chapterID any, imageChan chan<- static.Image) error {
 	for i, page := range res.Body.Body {
 		log.Trace().Msgf("url: %s", page.Urls.Original)
 
-		filename := path.Base(page.Urls.Original)
-		ext := filepath.Ext(filename)
+		ext := filepath.Ext(path.Base(page.Urls.Original))
 
 		processPage(page.Urls.Original, indexNamer.Get(i, ext), imageChan)
 	}
