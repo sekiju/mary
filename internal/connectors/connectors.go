@@ -8,6 +8,7 @@ import (
 	"559/internal/connectors/manga_bilibili"
 	"559/internal/connectors/pixiv"
 	"559/internal/connectors/speed_binb/cmoa"
+	"559/internal/connectors/speed_binb/comic_meteor"
 	"559/internal/connectors/speed_binb/comic_valkyrie"
 	"559/internal/connectors/speed_binb/storia_takeshobo"
 	"559/internal/connectors/speed_binb/yanmaga"
@@ -42,6 +43,7 @@ func init() {
 		cmoa.New(),
 		storia_takeshobo.New(),
 		yanmaga.New(),
+		comic_meteor.New(),
 	)
 
 	gigaViewerWebsites := []string{

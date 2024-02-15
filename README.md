@@ -42,6 +42,7 @@
     - [www.comic-valkyrie.com](https://www.comic-valkyrie.com)
     - [cmoa.jp](https://cmoa.jp)
     - [yanmaga.jp](https://yanmaga.jp)
+    - [comic-meteor.jp](https://comic-meteor.jp)
 
 ## Config
 
