@@ -11,8 +11,9 @@ import (
 const Version = "development"
 
 func Check() error {
+	log.Trace().Msgf("current version: %s", Version)
+
 	if Version == "development" {
-		log.Trace().Msg("development version. checker disabled")
 		return nil
 	}
 
