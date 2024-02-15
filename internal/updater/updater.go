@@ -12,6 +12,7 @@ const Version = "development"
 
 func Check() error {
 	if Version == "development" {
+		log.Trace().Msg("development version. checker disabled")
 		return nil
 	}
 

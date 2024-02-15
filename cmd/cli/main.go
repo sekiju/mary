@@ -20,7 +20,7 @@ import (
 func main() {
 	err := run()
 	if err != nil {
-		log.Error().Msgf("%v", err)
+		log.Error().Err(err)
 		fmt.Scanln()
 		os.Exit(1)
 	}

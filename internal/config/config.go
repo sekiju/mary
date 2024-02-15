@@ -2,12 +2,14 @@ package config
 
 import (
 	"fmt"
+	"runtime"
+	"strings"
+
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
-	"runtime"
-	"strings"
+	"github.com/rs/zerolog/log"
 )
 
 var k = koanf.NewWithConf(koanf.Conf{
@@ -27,7 +29,7 @@ var Data = Config{
 
 func Load() error {
 	if err := k.Load(file.Provider("config.yaml"), yaml.Parser()); err != nil {
-		fmt.Printf("error loading config: %v\n", err)
+		log.Error().Msgf("failed to load config: %v\n", err)
 	}
 
 	if err := k.Load(env.Provider("", ".", func(s string) string {
