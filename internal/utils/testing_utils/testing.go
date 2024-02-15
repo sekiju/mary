@@ -1,16 +1,18 @@
 package testing_utils
 
 import (
-	"559/internal/static"
-	"559/internal/utils"
 	"bytes"
 	"fmt"
-	"github.com/corona10/goimagehash"
-	"github.com/rs/zerolog/log"
 	"image"
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/corona10/goimagehash"
+	"github.com/rs/zerolog/log"
+
+	"559/internal/static"
+	"559/internal/utils"
 )
 
 func Connector(t *testing.T, c static.Connector, assetUrl, chapterUrl string) {

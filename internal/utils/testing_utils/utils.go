@@ -1,8 +1,6 @@
 package testing_utils
 
 import (
-	"559/internal/utils"
-	"559/pkg/request"
 	"fmt"
 	"image"
 	"os"
@@ -11,6 +9,9 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"559/internal/utils"
+	"559/pkg/request"
 )
 
 func getAsset(path, uri string) (image.Image, error) {
@@ -43,6 +44,28 @@ func getAsset(path, uri string) (image.Image, error) {
 }
 
 func rootFolder(t *testing.T) func() {
+	originalWD, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, b, _, _ := runtime.Caller(0)
+	d := filepath.Dir(path.Join(path.Dir(b), "../.."))
+
+	err = os.Chdir(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return func() {
+		err := os.Chdir(originalWD)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkRootFolder(t *testing.B) func() {
 	originalWD, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
