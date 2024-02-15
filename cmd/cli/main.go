@@ -17,6 +17,10 @@ import (
 	"559/internal/utils"
 )
 
+var (
+	version = "development"
+)
+
 func main() {
 	err := run()
 	if err != nil {
@@ -31,7 +35,7 @@ func main() {
 func run() error {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
-	err := updater.Check()
+	err := updater.Check(version)
 	if err != nil {
 		return err
 	}

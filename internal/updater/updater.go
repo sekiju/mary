@@ -8,12 +8,10 @@ import (
 	"559/pkg/request"
 )
 
-const Version = "development"
+func Check(version string) error {
+	log.Trace().Msgf("current version: %s", version)
 
-func Check() error {
-	log.Trace().Msgf("current version: %s", Version)
-
-	if Version == "development" {
+	if version == "development" {
 		return nil
 	}
 
@@ -22,7 +20,7 @@ func Check() error {
 		return err
 	}
 
-	if isOutdated(Version, res.Body[0].TagName) {
+	if isOutdated(version, res.Body[0].TagName) {
 		log.Warn().Msg("current version outdated, update to new version: https://github.com/sekiju/mary/releases")
 	}
 
