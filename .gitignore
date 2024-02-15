@@ -9,6 +9,7 @@ bin/
 # Debug
 tests/
 cover.out
+vendor/
 
 # Config
 config.yaml

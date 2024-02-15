@@ -12,3 +12,6 @@ test:
 
 test-cover:
 	go test ./internal/connectors/... -v -coverprofile cover.out
+
+update-all:
+	go get -u ./... && go mod tidy

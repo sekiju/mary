@@ -1,19 +1,21 @@
 package speed_binb
 
 import (
-	"559/internal/static"
-	"559/internal/utils"
-	"559/pkg/request"
 	"bytes"
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/rs/zerolog/log"
 	"image"
 	"image/draw"
 	"image/jpeg"
 	"net/url"
 	"regexp"
 	"strconv"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/rs/zerolog/log"
+
+	"559/internal/static"
+	"559/internal/utils"
+	"559/pkg/request"
 )
 
 func handleV016061(uri url.URL, imageChan chan<- static.Image, selection *goquery.Selection) error {
@@ -27,7 +29,22 @@ func handleV016061(uri url.URL, imageChan chan<- static.Image, selection *goquer
 	if len(pages) > 0 {
 		indexNamer := utils.NewIndexNamer(len(pages))
 		for i := 0; i < len(pages); i++ {
-			process016061(uri, pages[i], indexNamer.Get(i, ".jpg"), imageChan)
+			var fn static.ImageFn
+			fn = func() ([]byte, error) {
+				ptimgResponse, err := request.Get[Ptimg](utils.JoinURL(uri.String(), pages[i]))
+				if err != nil {
+					return nil, err
+				}
+
+				imageResponse, err := request.Get[image.Image](utils.JoinURL(uri.String(), "data", ptimgResponse.Body.Resources.I.Src))
+				if err != nil {
+					return nil, err
+				}
+
+				return descramble016061(imageResponse.Body, ptimgResponse.Body.Views), nil
+			}
+
+			imageChan <- static.NewImage(indexNamer.Get(i, ".jpg"), &fn)
 		}
 	} else {
 		return fmt.Errorf("unsupported speedbinb reader")
@@ -35,25 +52,6 @@ func handleV016061(uri url.URL, imageChan chan<- static.Image, selection *goquer
 
 	close(imageChan)
 	return nil
-}
-
-func process016061(uri url.URL, page string, fileName string, imageChan chan<- static.Image) {
-	var fn static.ImageFn
-	fn = func() ([]byte, error) {
-		ptimgResponse, err := request.Get[Ptimg](utils.JoinURL(uri.String(), page))
-		if err != nil {
-			return nil, err
-		}
-
-		imageResponse, err := request.Get[image.Image](utils.JoinURL(uri.String(), "data", ptimgResponse.Body.Resources.I.Src))
-		if err != nil {
-			return nil, err
-		}
-
-		return descramble016061(imageResponse.Body, ptimgResponse.Body.Views), nil
-	}
-
-	imageChan <- static.NewImage(fileName, &fn)
 }
 
 func descramble016061(img image.Image, views []PtimgView) []byte {

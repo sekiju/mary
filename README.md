@@ -12,7 +12,7 @@
 ## Websites
 
 - [manga.fod.fujitv.co.jp](https://manga.fod.fujitv.co.jp/)
-- [comic-walker.com](https://comic-walker.com/) _(session not supported)_
+- [comic-walker.com](https://comic-walker.com/)
 - [www.pixiv.net](https://www.pixiv.net/)
 - [comic.webnewtype.com](https://comic.webnewtype.com)
 - [manga.bilibili.com](https://manga.bilibili.com)

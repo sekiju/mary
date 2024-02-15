@@ -1,16 +1,18 @@
 package giga_viewer
 
 import (
+	"fmt"
+	"net/http"
+	"net/url"
+	"regexp"
+
+	"github.com/mmcdole/gofeed"
+	"github.com/rs/zerolog/log"
+
 	"559/internal/config"
 	"559/internal/static"
 	"559/internal/utils"
 	"559/pkg/request"
-	"fmt"
-	"github.com/mmcdole/gofeed"
-	"github.com/rs/zerolog/log"
-	"net/http"
-	"net/url"
-	"regexp"
 )
 
 type GigaViewer struct {
@@ -104,25 +106,22 @@ func (c *GigaViewer) Pages(chapterID any, imageChan chan<- static.Image) error {
 	indexNamer := utils.NewIndexNamer(len(pages))
 	for i, page := range pages {
 		log.Trace().Msgf("url: %s", page.Src)
-		processPage(page.Src, indexNamer.Get(i, ".jpg"), imageChan)
+
+		var fn static.ImageFn
+		fn = func() ([]byte, error) {
+			res, err := request.Get[[]byte](page.Src)
+			if err != nil {
+				return nil, err
+			}
+
+			return res.Body, err
+		}
+
+		imageChan <- static.NewImage(indexNamer.Get(i, ".jpg"), &fn)
 	}
 
 	close(imageChan)
 	return nil
-}
-
-func processPage(uri, fileName string, imageChan chan<- static.Image) {
-	var fn static.ImageFn
-	fn = func() ([]byte, error) {
-		res, err := request.Get[[]byte](uri)
-		if err != nil {
-			return nil, err
-		}
-
-		return res.Body, err
-	}
-
-	imageChan <- static.NewImage(fileName, &fn)
 }
 
 func filterMainPages(pages []EpisodePage) []EpisodePage {

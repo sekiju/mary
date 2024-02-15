@@ -42,7 +42,7 @@ func handleResponse(res *http.Response, r interface{}) error {
 
 		err = json.Unmarshal(body, &r)
 		if err != nil {
-			return err
+			return fmt.Errorf("request: %v", err)
 		}
 	case "image/png", "image/jpeg":
 		switch v := r.(type) {

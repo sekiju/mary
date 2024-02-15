@@ -1,15 +1,17 @@
 package fod
 
 import (
+	"fmt"
+	"image"
+	"net/url"
+	"strconv"
+
+	"github.com/rs/zerolog/log"
+
 	"559/internal/config"
 	"559/internal/static"
 	"559/internal/utils"
 	"559/pkg/request"
-	"fmt"
-	"github.com/rs/zerolog/log"
-	"image"
-	"net/url"
-	"strconv"
 )
 
 type Fod struct {
@@ -89,25 +91,21 @@ func (c *Fod) Pages(chapterID any, imageChan chan<- static.Image) error {
 
 		log.Trace().Msgf("image url: %s", imageUrl)
 
-		processPage(imageUrl, res.Body.GuardianInfoAll.KeysForBrowser[i-1], indexNamer.Get(i, ".jpg"), imageChan)
+		var fn static.ImageFn
+		fn = func() ([]byte, error) {
+			imageResponse, err := request.Get[image.Image](imageUrl)
+			if err != nil {
+				return nil, err
+			}
+
+			return descrambleImage(imageResponse.Body, res.Body.GuardianInfoAll.KeysForBrowser[i-1]), nil
+		}
+
+		imageChan <- static.NewImage(indexNamer.Get(i, ".jpg"), &fn)
 	}
 
 	close(imageChan)
 	return nil
-}
-
-func processPage(uri, key, fileName string, imageChan chan<- static.Image) {
-	var fn static.ImageFn
-	fn = func() ([]byte, error) {
-		res, err := request.Get[image.Image](uri)
-		if err != nil {
-			return nil, err
-		}
-
-		return descrambleImage(res.Body, key), nil
-	}
-
-	imageChan <- static.NewImage(fileName, &fn)
 }
 
 func (c *Fod) requestHeaders() request.OptsFn {

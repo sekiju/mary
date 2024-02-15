@@ -1,17 +1,19 @@
 package manga_bilibili
 
 import (
-	"559/internal/static"
-	"559/internal/utils"
-	"559/pkg/request"
 	"errors"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"net/url"
 	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/rs/zerolog/log"
+
+	"559/internal/static"
+	"559/internal/utils"
+	"559/pkg/request"
 )
 
 type MangaBiliBili struct {
@@ -101,25 +103,21 @@ func (c *MangaBiliBili) Pages(chapterID any, imageChan chan<- static.Image) erro
 
 		ext := filepath.Ext(path.Base(datum.Url))
 
-		processPage(imgUri, indexNamer.Get(i, ext), imageChan)
+		var fn static.ImageFn
+		fn = func() ([]byte, error) {
+			res, err := request.Get[[]byte](imgUri, request.SetHeader("Origin", "https://manga.bilibili.com"))
+			if err != nil {
+				return nil, err
+			}
+
+			return res.Body, nil
+		}
+
+		imageChan <- static.NewImage(indexNamer.Get(i, ext), &fn)
 	}
 
 	close(imageChan)
 	return nil
-}
-
-func processPage(uri, fileName string, imageChan chan<- static.Image) {
-	var fn static.ImageFn
-	fn = func() ([]byte, error) {
-		res, err := request.Get[[]byte](uri, request.SetHeader("Origin", "https://manga.bilibili.com"))
-		if err != nil {
-			return nil, err
-		}
-
-		return res.Body, nil
-	}
-
-	imageChan <- static.NewImage(fileName, &fn)
 }
 
 func New() *MangaBiliBili {

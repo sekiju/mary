@@ -1,16 +1,18 @@
 package comic_walker
 
 import (
-	"559/internal/static"
-	"559/internal/utils"
-	"559/pkg/request"
 	"encoding/hex"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	_ "image/jpeg"
 	_ "image/png"
 	"net/url"
 	"regexp"
+
+	"github.com/rs/zerolog/log"
+
+	"559/internal/static"
+	"559/internal/utils"
+	"559/pkg/request"
 )
 
 type ComicWalker struct {
@@ -91,29 +93,25 @@ func (c *ComicWalker) Pages(chapterID any, imageChan chan<- static.Image) error 
 			log.Trace().Msgf("url: %s | hash is nil", page.Meta.SourceUrl)
 		}
 
-		processPage(page.Meta.SourceUrl, indexNamer.Get(i, ".jpg"), page.Meta.DrmHash, imageChan)
+		var imageFn static.ImageFn
+		imageFn = func() ([]byte, error) {
+			imageResponse, err := request.Get[[]byte](page.Meta.SourceUrl)
+			if err != nil {
+				return nil, err
+			}
+
+			if page.Meta.DrmHash != nil {
+				return decodeImage(imageResponse.Body, *page.Meta.DrmHash)
+			} else {
+				return imageResponse.Body, nil
+			}
+		}
+
+		imageChan <- static.NewImage(indexNamer.Get(i, ".jpg"), &imageFn)
 	}
 
 	close(imageChan)
 	return nil
-}
-
-func processPage(uri, fileName string, hash *string, imageChan chan<- static.Image) {
-	var fn static.ImageFn
-	fn = func() ([]byte, error) {
-		res, err := request.Get[[]byte](uri)
-		if err != nil {
-			return nil, err
-		}
-
-		if hash != nil {
-			return decodeImage(res.Body, *hash)
-		} else {
-			return res.Body, nil
-		}
-	}
-
-	imageChan <- static.NewImage(fileName, &fn)
 }
 
 func decodeImage(b []byte, hash string) ([]byte, error) {

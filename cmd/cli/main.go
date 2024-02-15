@@ -59,6 +59,10 @@ func run() error {
 		return err
 	}
 
+	return parse(*uri)
+}
+
+func parse(uri url.URL) error {
 	c, err := connectors.FindByDomain(uri.Hostname())
 	if err != nil {
 		return err
@@ -66,7 +70,7 @@ func run() error {
 
 	log.Info().Msgf("domain: %s | speed: %d image/s", c.Data().Domain, config.Data.Settings.Threads)
 
-	urlType, err := c.ResolveType(*uri)
+	urlType, err := c.ResolveType(uri)
 	if err != nil {
 		return err
 	}
@@ -108,7 +112,7 @@ func run() error {
 
 		return fmt.Errorf("book downloading not yet implemented")
 	case "CHAPTER":
-		chapter, err := c.Chapter(*uri)
+		chapter, err := c.Chapter(uri)
 		if err != nil {
 			return err
 		}

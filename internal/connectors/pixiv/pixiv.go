@@ -1,16 +1,18 @@
 package pixiv
 
 import (
-	"559/internal/config"
-	"559/internal/static"
-	"559/internal/utils"
-	"559/pkg/request"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"net/http"
 	"net/url"
 	"path"
 	"path/filepath"
+
+	"github.com/rs/zerolog/log"
+
+	"559/internal/config"
+	"559/internal/static"
+	"559/internal/utils"
+	"559/pkg/request"
 )
 
 type Pixiv struct {
@@ -84,25 +86,21 @@ func (c *Pixiv) Pages(chapterID any, imageChan chan<- static.Image) error {
 
 		ext := filepath.Ext(path.Base(page.Urls.Original))
 
-		processPage(page.Urls.Original, indexNamer.Get(i, ext), imageChan)
+		var fn static.ImageFn
+		fn = func() ([]byte, error) {
+			res, err := request.Get[[]byte](page.Urls.Original, request.SetHeader("Referer", "https://pixiv.net/"))
+			if err != nil {
+				return nil, err
+			}
+
+			return res.Body, nil
+		}
+
+		imageChan <- static.NewImage(indexNamer.Get(i, ext), &fn)
 	}
 
 	close(imageChan)
 	return nil
-}
-
-func processPage(uri string, fileName string, imageChan chan<- static.Image) {
-	var fn static.ImageFn
-	fn = func() ([]byte, error) {
-		res, err := request.Get[[]byte](uri, request.SetHeader("Referer", "https://pixiv.net/"))
-		if err != nil {
-			return nil, err
-		}
-
-		return res.Body, nil
-	}
-
-	imageChan <- static.NewImage(fileName, &fn)
 }
 
 func (c *Pixiv) withCookies() request.OptsFn {

@@ -1,16 +1,18 @@
 package comic_webnewtype
 
 import (
-	"559/internal/static"
-	"559/internal/utils"
-	"559/pkg/request"
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/rs/zerolog/log"
 	"net/url"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/rs/zerolog/log"
+
+	"559/internal/static"
+	"559/internal/utils"
+	"559/pkg/request"
 )
 
 type ComicWebNewtype struct {
@@ -130,25 +132,21 @@ func (c *ComicWebNewtype) Pages(chapterID any, imageChan chan<- static.Image) er
 
 		log.Trace().Msgf("url: %s", imgUri)
 
-		processPage(imgUri, indexNamer.Get(i, ext), imageChan)
+		var imageFn static.ImageFn
+		imageFn = func() ([]byte, error) {
+			imageResponse, err := request.Get[[]byte](imgUri)
+			if err != nil {
+				return nil, err
+			}
+
+			return imageResponse.Body, nil
+		}
+
+		imageChan <- static.NewImage(indexNamer.Get(i, ext), &imageFn)
 	}
 
 	close(imageChan)
 	return nil
-}
-
-func processPage(uri string, fileName string, imageChan chan<- static.Image) {
-	var fn static.ImageFn
-	fn = func() ([]byte, error) {
-		res, err := request.Get[[]byte](uri)
-		if err != nil {
-			return nil, err
-		}
-
-		return res.Body, nil
-	}
-
-	imageChan <- static.NewImage(fileName, &fn)
 }
 
 func New() *ComicWebNewtype {
