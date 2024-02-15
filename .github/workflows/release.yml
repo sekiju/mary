@@ -2,7 +2,7 @@ name: Build And Publish Assets On Release
 
 on:
   release:
-    types: [created]
+    types: [ created ]
 
 permissions:
   contents: write
@@ -14,8 +14,8 @@ jobs:
     strategy:
       matrix:
         # build and publish in parallel: linux/386, linux/amd64, linux/arm64, windows/386, windows/amd64, darwin/amd64, darwin/arm64
-        goos: [linux, windows, darwin]
-        goarch: ["386", amd64, arm64]
+        goos: [ linux, windows, darwin ]
+        goarch: [ "386", amd64, arm64 ]
         exclude:
           - goarch: "386"
             goos: darwin
@@ -33,3 +33,4 @@ jobs:
           compress_assets: false
           project_path: "./cmd/cli"
           extra_files: README.md
+          ldflags: "-X 'updater.Version=${{ github.ref_name }}'"

@@ -1,17 +1,20 @@
 package main
 
 import (
-	"559/internal/config"
-	"559/internal/connectors"
-	"559/internal/static"
-	"559/internal/utils"
 	"fmt"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"net/url"
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+
+	"559/internal/config"
+	"559/internal/connectors"
+	"559/internal/static"
+	"559/internal/updater"
+	"559/internal/utils"
 )
 
 func main() {
@@ -28,7 +31,12 @@ func main() {
 func run() error {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
-	err := config.Load()
+	err := updater.Check()
+	if err != nil {
+		return err
+	}
+
+	err = config.Load()
 	if err != nil {
 		return err
 	}
