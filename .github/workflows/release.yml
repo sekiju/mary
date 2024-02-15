@@ -28,7 +28,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
-          asset_name: "559_${{ matrix.goos }}_${{ matrix.goarch }}"
+          asset_name: "mary_${{ matrix.goos }}_${{ matrix.goarch }}"
           md5sum: false
           compress_assets: false
           project_path: "./cmd/cli"
