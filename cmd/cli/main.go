@@ -24,7 +24,7 @@ var (
 func main() {
 	err := run()
 	if err != nil {
-		log.Error().Err(err)
+		log.Error().Err(err).Msg("")
 		fmt.Scanln()
 		os.Exit(1)
 	}
