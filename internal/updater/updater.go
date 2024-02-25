@@ -21,7 +21,7 @@ func Check(version string) error {
 	}
 
 	if isOutdated(version, res.Body[0].TagName) {
-		log.Warn().Msg("current version outdated, update to new version: https://github.com/sekiju/mary/releases")
+		log.Warn().Msg("current version outdated, update to new version: https://github.com/sekiju/mary/releases/latest")
 	}
 
 	return nil
