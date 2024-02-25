@@ -6,12 +6,10 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/rs/zerolog/log"
-
-	"559/internal/config"
-	"559/internal/static"
-	"559/internal/utils"
-	"559/pkg/request"
+	"mary/internal/config"
+	"mary/internal/static"
+	"mary/internal/utils"
+	"mary/pkg/request"
 )
 
 type Fod struct {
@@ -89,8 +87,6 @@ func (c *Fod) Pages(chapterID any, imageChan chan<- static.Image) error {
 			return err
 		}
 
-		log.Trace().Msgf("image url: %s", imageUrl)
-
 		var fn static.ImageFn
 		fn = func() ([]byte, error) {
 			imageResponse, err := request.Get[image.Image](imageUrl)
@@ -111,7 +107,7 @@ func (c *Fod) Pages(chapterID any, imageChan chan<- static.Image) error {
 func (c *Fod) requestHeaders() request.OptsFn {
 	connectorConfig, exists := config.Data.Sites[c.domain]
 	return func(c *request.Config) {
-		c.Headers["zk-app-version"] = "1.1.26"
+		c.Headers["zk-app-version"] = "1.1.27"
 		c.Headers["zk-os-type"] = "1"
 		c.Headers["zk-safe-search"] = "0"
 		if exists {

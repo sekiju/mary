@@ -1,9 +1,9 @@
 package speed_binb
 
 import (
-	"559/internal/static"
 	"fmt"
 	"github.com/rs/zerolog/log"
+	"mary/internal/static"
 	"net/url"
 )
 

@@ -1,11 +1,11 @@
 package cmoa
 
 import (
-	"559/internal/config"
-	"559/internal/connectors/speed_binb"
-	"559/internal/static"
-	"559/pkg/request"
 	"github.com/rs/zerolog/log"
+	"mary/internal/config"
+	"mary/internal/connectors/speed_binb"
+	"mary/internal/static"
+	"mary/pkg/request"
 	"net/url"
 )
 

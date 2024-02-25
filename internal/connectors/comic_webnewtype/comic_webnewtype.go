@@ -10,9 +10,9 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/rs/zerolog/log"
 
-	"559/internal/static"
-	"559/internal/utils"
-	"559/pkg/request"
+	"mary/internal/static"
+	"mary/internal/utils"
+	"mary/pkg/request"
 )
 
 type ComicWebNewtype struct {

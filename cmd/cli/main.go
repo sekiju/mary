@@ -10,11 +10,11 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"559/internal/config"
-	"559/internal/connectors"
-	"559/internal/static"
-	"559/internal/updater"
-	"559/internal/utils"
+	"mary/internal/config"
+	"mary/internal/connectors"
+	"mary/internal/static"
+	"mary/internal/updater"
+	"mary/internal/utils"
 )
 
 var (
@@ -22,11 +22,8 @@ var (
 )
 
 func main() {
-	err := run()
-	if err != nil {
-		log.Error().Err(err).Msg("")
-		fmt.Scanln()
-		os.Exit(1)
+	if err := run(); err != nil {
+		log.Fatal().Err(err).Msg("")
 	}
 
 	os.Exit(0)

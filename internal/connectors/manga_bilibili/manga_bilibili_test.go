@@ -1,7 +1,7 @@
 package manga_bilibili
 
 import (
-	"559/internal/static"
+	"mary/internal/static"
 	"net/url"
 	"testing"
 )

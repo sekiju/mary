@@ -9,10 +9,10 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"559/internal/config"
-	"559/internal/static"
-	"559/internal/utils"
-	"559/pkg/request"
+	"mary/internal/config"
+	"mary/internal/static"
+	"mary/internal/utils"
+	"mary/pkg/request"
 )
 
 type Pixiv struct {

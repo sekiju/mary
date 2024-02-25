@@ -1,9 +1,9 @@
 package storia_takeshobo
 
 import (
-	"559/internal/connectors/speed_binb"
-	"559/internal/static"
-	"559/pkg/request"
+	"mary/internal/connectors/speed_binb"
+	"mary/internal/static"
+	"mary/pkg/request"
 	"net/url"
 )
 

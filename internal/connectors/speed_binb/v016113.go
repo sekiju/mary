@@ -1,7 +1,7 @@
 package speed_binb
 
 import (
-	"559/internal/static"
+	"mary/internal/static"
 	"net/url"
 )
 

@@ -3,6 +3,7 @@ package request
 import (
 	"encoding/json"
 	"fmt"
+	"golang.org/x/image/webp"
 	"image"
 	"io"
 	"net/http"
@@ -48,6 +49,25 @@ func handleResponse(res *http.Response, r interface{}) error {
 		switch v := r.(type) {
 		case *image.Image:
 			img, _, err := image.Decode(res.Body)
+			if err != nil {
+				return err
+			}
+
+			*v = img
+		case *[]byte:
+			body, err := io.ReadAll(res.Body)
+			if err != nil {
+				return err
+			}
+
+			*v = body
+		default:
+			return fmt.Errorf("unexpected type for image decoding")
+		}
+	case "image/webp":
+		switch v := r.(type) {
+		case *image.Image:
+			img, err := webp.Decode(res.Body)
 			if err != nil {
 				return err
 			}

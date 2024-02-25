@@ -10,9 +10,17 @@ import (
 	"path/filepath"
 )
 
-func WriteImageBytes(filePath string, b []byte) error {
-	err := os.MkdirAll(path.Dir(filePath), os.ModePerm)
+func ReadImageBytes(filePath string) ([]byte, error) {
+	imageBytes, err := os.ReadFile(filePath)
 	if err != nil {
+		return nil, fmt.Errorf("error reading image file: %s", err)
+	}
+
+	return imageBytes, nil
+}
+
+func WriteImageBytes(filePath string, b []byte) error {
+	if err := os.MkdirAll(path.Dir(filePath), os.ModePerm); err != nil {
 		return err
 	}
 
@@ -21,8 +29,7 @@ func WriteImageBytes(filePath string, b []byte) error {
 		return fmt.Errorf("failed to create file: %s", err)
 	}
 
-	ext := filepath.Ext(filePath)
-	if ext == "" {
+	if ext := filepath.Ext(filePath); ext == "" {
 		return fmt.Errorf("file has no extension: %s", filePath)
 	}
 
@@ -31,8 +38,7 @@ func WriteImageBytes(filePath string, b []byte) error {
 		return fmt.Errorf("failed to write to file: %s", err)
 	}
 
-	err = file.Close()
-	if err != nil {
+	if err = file.Close(); err != nil {
 		return err
 	}
 

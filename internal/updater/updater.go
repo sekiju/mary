@@ -5,7 +5,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"559/pkg/request"
+	"mary/pkg/request"
 )
 
 func Check(version string) error {

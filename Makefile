@@ -1,3 +1,6 @@
+install:
+	go install golang.org/x/vuln/cmd/govulncheck@latest
+
 build:
 	go build -o bin/mary cmd/cli/main.go
 
@@ -15,3 +18,6 @@ test-cover:
 
 update-all:
 	go get -u ./... && go mod tidy
+
+vuln:
+	govulncheck

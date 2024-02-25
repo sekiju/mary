@@ -1,12 +1,12 @@
 package speed_binb
 
 import (
-	"559/internal/static"
-	"559/internal/utils"
-	"559/pkg/request"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/rs/zerolog/log"
+	"mary/internal/static"
+	"mary/internal/utils"
+	"mary/pkg/request"
 	"net/url"
 	"strconv"
 	"strings"

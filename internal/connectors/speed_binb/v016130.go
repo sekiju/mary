@@ -1,9 +1,6 @@
 package speed_binb
 
 import (
-	"559/internal/static"
-	"559/internal/utils"
-	"559/pkg/request"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -12,6 +9,9 @@ import (
 	"image"
 	"image/draw"
 	"image/jpeg"
+	"mary/internal/static"
+	"mary/internal/utils"
+	"mary/pkg/request"
 	"net/url"
 	"regexp"
 	"strconv"

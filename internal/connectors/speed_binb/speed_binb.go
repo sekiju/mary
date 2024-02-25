@@ -1,8 +1,8 @@
 package speed_binb
 
 import (
-	"559/internal/static"
-	"559/pkg/request"
+	"mary/internal/static"
+	"mary/pkg/request"
 	"net/url"
 	"strings"
 )

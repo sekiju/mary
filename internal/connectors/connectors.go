@@ -1,18 +1,18 @@
 package connectors
 
 import (
-	"559/internal/connectors/comic_walker"
-	"559/internal/connectors/comic_webnewtype"
-	"559/internal/connectors/fod"
-	"559/internal/connectors/giga_viewer"
-	"559/internal/connectors/manga_bilibili"
-	"559/internal/connectors/pixiv"
-	"559/internal/connectors/speed_binb/cmoa"
-	"559/internal/connectors/speed_binb/comic_meteor"
-	"559/internal/connectors/speed_binb/comic_valkyrie"
-	"559/internal/connectors/speed_binb/storia_takeshobo"
-	"559/internal/connectors/speed_binb/yanmaga"
-	"559/internal/static"
+	"mary/internal/connectors/comic_walker"
+	"mary/internal/connectors/comic_webnewtype"
+	"mary/internal/connectors/fod"
+	"mary/internal/connectors/giga_viewer"
+	"mary/internal/connectors/manga_bilibili"
+	"mary/internal/connectors/pixiv"
+	"mary/internal/connectors/speed_binb/cmoa"
+	"mary/internal/connectors/speed_binb/comic_meteor"
+	"mary/internal/connectors/speed_binb/comic_valkyrie"
+	"mary/internal/connectors/speed_binb/storia_takeshobo"
+	"mary/internal/connectors/speed_binb/yanmaga"
+	"mary/internal/static"
 )
 
 var state = make(map[string]static.Connector)

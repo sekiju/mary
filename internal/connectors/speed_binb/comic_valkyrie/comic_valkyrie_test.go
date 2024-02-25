@@ -1,12 +1,12 @@
 package comic_valkyrie
 
 import (
-	"559/internal/utils/testing_utils"
+	"mary/tools"
 	"testing"
 )
 
 func TestComicValkyrie_Chapter(t *testing.T) {
-	testing_utils.Connector(
+	tools.TestConnector(
 		t,
 		New(),
 		"https://host.kireyev.org/559/comic_valkyrie.jpg",
