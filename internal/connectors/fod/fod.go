@@ -107,7 +107,7 @@ func (c *Fod) Pages(chapterID any, imageChan chan<- static.Image) error {
 func (c *Fod) requestHeaders() request.OptsFn {
 	connectorConfig, exists := config.Data.Sites[c.domain]
 	return func(c *request.Config) {
-		c.Headers["zk-app-version"] = "1.1.27"
+		c.Headers["zk-app-version"] = "1.1.28"
 		c.Headers["zk-os-type"] = "1"
 		c.Headers["zk-safe-search"] = "0"
 		if exists {

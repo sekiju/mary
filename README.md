@@ -6,7 +6,7 @@
 ## Usage
 
 ```bash
-559.exe https://shonenjumpplus.com/magazine/4856001361564051266
+mary.exe https://shonenjumpplus.com/magazine/4856001361564051266
 ```
 
 ## Websites
