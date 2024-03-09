@@ -1,12 +1,12 @@
 package fod
 
 import (
-	"mary/tools"
+	"mary/internal/utils"
 	"testing"
 )
 
 func TestComicNewtype_Chapter(t *testing.T) {
-	tools.TestConnector(
+	utils.TestConnector(
 		t,
 		New(),
 		"https://host.kireyev.org/mary-files/manga_fod.jpg",

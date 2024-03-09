@@ -1,4 +1,4 @@
-package tools
+package utils
 
 import (
 	"crypto/md5"
@@ -6,7 +6,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"mary/internal/static"
-	"mary/internal/utils"
 	"mary/pkg/request"
 	"net/url"
 	"os"
@@ -60,7 +59,7 @@ func TestConnector(t *testing.T, c static.Connector, assetUrl, chapterUrl string
 		ext := filepath.Ext(expectedPath)
 		expectedFailedPath := strings.TrimSuffix(expectedPath, ext) + "_failed" + ext
 
-		if err = utils.WriteImageBytes(expectedFailedPath, downloadedImg); err != nil {
+		if err = WriteImageBytes(expectedFailedPath, downloadedImg); err != nil {
 			t.Error(err)
 		}
 
@@ -77,7 +76,7 @@ func compareBytes(downloaded, expected []byte) bool {
 
 func getAsset(path, uri string) ([]byte, error) {
 	if _, err := os.Stat(path); err == nil {
-		return utils.ReadImageBytes(path)
+		return ReadImageBytes(path)
 	}
 
 	img, err := request.Get[[]byte](uri)
@@ -85,7 +84,7 @@ func getAsset(path, uri string) ([]byte, error) {
 		return nil, err
 	}
 
-	err = utils.WriteImageBytes(path, img.Body)
+	err = WriteImageBytes(path, img.Body)
 	if err != nil {
 		return nil, err
 	}
