@@ -49,7 +49,7 @@ func (c *Cmoa) Pages(chapterID any, imageChan chan<- static.Image) error {
 }
 
 func (c *Cmoa) withCookies() request.OptsFn {
-	connectorConfig, exists := config.Data.Sites[c.domain]
+	connectorConfig, exists := config.Config.Sites[c.domain]
 	return func(cf *request.Config) {
 		if exists {
 			log.Trace().Msgf("used cookies for %s", c.domain)

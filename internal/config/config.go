@@ -1,47 +1,50 @@
 package config
 
 import (
-	"fmt"
-	"runtime"
-	"strings"
-
+	"errors"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
-	"github.com/rs/zerolog/log"
+	"os"
+	"runtime"
+	"strings"
 )
 
-var k = koanf.NewWithConf(koanf.Conf{
-	Delim:       ".",
-	StrictMerge: true,
-})
+// Config is the global config.
+var Config = defaultConfig()
 
-var Data = Config{
-	Settings: Settings{
-		Debug:             DebugSettings{Enable: false, Url: ""},
-		OutputPath:        "output/",
-		ClearOutputFolder: true,
-		Threads:           runtime.NumCPU(),
-	},
-	Sites: map[string]SiteConfig{},
+func defaultConfig() *Configurator {
+	k := koanf.NewWithConf(koanf.Conf{
+		Delim:       ".",
+		StrictMerge: true,
+	})
+
+	return &Configurator{
+		k: k,
+		Settings: Settings{
+			Debug:             DebugSettings{Enable: false, Url: ""},
+			OutputPath:        "output/",
+			ClearOutputFolder: true,
+			Threads:           runtime.NumCPU(),
+		},
+		Sites: map[string]SiteConfig{},
+	}
 }
 
-func Load() error {
-	if err := k.Load(file.Provider("config.yaml"), yaml.Parser()); err != nil {
-		log.Error().Msgf("failed to load config: %v\n", err)
+func (c Configurator) Load() error {
+	_, err := os.Stat("config.yaml")
+	if !errors.Is(err, os.ErrNotExist) {
+		if err = c.k.Load(file.Provider("config.yaml"), yaml.Parser()); err != nil {
+			return err
+		}
 	}
 
-	if err := k.Load(env.Provider("", ".", func(s string) string {
+	if err = c.k.Load(env.Provider("", ".", func(s string) string {
 		return strings.Replace(strings.ToLower(s), "_", ".", -1)
 	}), nil); err != nil {
-		fmt.Println(err)
+		return err
 	}
 
-	err := k.Unmarshal("", &Data)
-	if err != nil {
-		return fmt.Errorf("error loading data: %v", err)
-	}
-
-	return nil
+	return c.k.Unmarshal("", &Config)
 }

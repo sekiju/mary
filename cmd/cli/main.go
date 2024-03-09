@@ -2,19 +2,17 @@ package main
 
 import (
 	"fmt"
-	"net/url"
-	"os"
-	"path/filepath"
-	"sync"
-
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-
 	"mary/internal/config"
 	"mary/internal/connectors"
 	"mary/internal/static"
 	"mary/internal/updater"
 	"mary/internal/utils"
+	"net/url"
+	"os"
+	"path/filepath"
+	"sync"
 )
 
 var (
@@ -32,24 +30,22 @@ func main() {
 func run() error {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
-	err := updater.Check(version)
-	if err != nil {
+	if err := updater.Check(version); err != nil {
 		return err
 	}
 
-	err = config.Load()
-	if err != nil {
+	if err := config.Config.Load(); err != nil {
 		return err
 	}
 
-	if !config.Data.Settings.Debug.Enable {
+	if !config.Config.Settings.Debug.Enable {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
 
 	var arg string
 	if len(os.Args) < 2 {
-		if config.Data.Settings.Debug.Enable && len(config.Data.Settings.Debug.Url) > 0 {
-			arg = config.Data.Settings.Debug.Url
+		if config.Config.Settings.Debug.Enable && len(config.Config.Settings.Debug.Url) > 0 {
+			arg = config.Config.Settings.Debug.Url
 			log.Trace().Msgf("debug url: %s", arg)
 		} else {
 			log.Info().Msg("provide the URL of the chapter viewer:")
@@ -77,7 +73,7 @@ func parse(uri url.URL) error {
 		return err
 	}
 
-	log.Info().Msgf("domain: %s | speed: %d image/s", c.Data().Domain, config.Data.Settings.Threads)
+	log.Info().Msgf("domain: %s | speed: %d image/s", c.Data().Domain, config.Config.Settings.Threads)
 
 	urlType, err := c.ResolveType(uri)
 	if err != nil {
@@ -89,16 +85,16 @@ func parse(uri url.URL) error {
 	imageChan := make(chan static.Image)
 	wg := &sync.WaitGroup{}
 
-	if config.Data.Settings.ClearOutputFolder {
-		err = os.RemoveAll(config.Data.Settings.OutputPath)
+	if config.Config.Settings.ClearOutputFolder {
+		err = os.RemoveAll(config.Config.Settings.OutputPath)
 		if err != nil {
 			return err
 		}
 	}
 
 	if urlType == "SHARED" {
-		if config.Data.Settings.TargetMethod != nil {
-			switch *config.Data.Settings.TargetMethod {
+		if config.Config.Settings.TargetMethod != nil {
+			switch *config.Config.Settings.TargetMethod {
 			case "book":
 				urlType = "BOOK"
 			case "chapter":
@@ -138,15 +134,15 @@ func parse(uri url.URL) error {
 			}
 		}()
 
-		err = os.MkdirAll(config.Data.Settings.OutputPath, os.ModePerm)
+		err = os.MkdirAll(config.Config.Settings.OutputPath, os.ModePerm)
 		if err != nil {
 			return err
 		}
 
-		for i := 0; i < config.Data.Settings.Threads; i++ {
+		for i := 0; i < config.Config.Settings.Threads; i++ {
 			wg.Add(1)
 			go func() {
-				err := worker(config.Data.Settings.OutputPath, imageChan, wg)
+				err := worker(config.Config.Settings.OutputPath, imageChan, wg)
 				if err != nil {
 					log.Error().Msgf("%v", err)
 					os.Exit(1)

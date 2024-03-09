@@ -48,7 +48,7 @@ func (c *Fod) Chapter(uri url.URL) (*static.Chapter, error) {
 		Title: res.Body.BookDetail.BookName,
 	}
 
-	_, sessionExists := config.Data.Sites[c.domain]
+	_, sessionExists := config.Config.Sites[c.domain]
 	if sessionExists && res.Body.BookDetail.IsFree && !res.Body.BookDetail.IsPurchased {
 		purchaseResponse, err := request.Post[ServerStatusResponse]("https://manga.fod.fujitv.co.jp/api/purchase/buy", request.Body(map[string]any{
 			"buy_type": 1,
@@ -105,7 +105,7 @@ func (c *Fod) Pages(chapterID any, imageChan chan<- static.Image) error {
 }
 
 func (c *Fod) requestHeaders() request.OptsFn {
-	connectorConfig, exists := config.Data.Sites[c.domain]
+	connectorConfig, exists := config.Config.Sites[c.domain]
 	return func(c *request.Config) {
 		c.Headers["zk-app-version"] = "1.1.27"
 		c.Headers["zk-os-type"] = "1"

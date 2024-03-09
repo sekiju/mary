@@ -104,7 +104,7 @@ func (c *Pixiv) Pages(chapterID any, imageChan chan<- static.Image) error {
 }
 
 func (c *Pixiv) withCookies() request.OptsFn {
-	connectorConfig, exists := config.Data.Sites[c.domain]
+	connectorConfig, exists := config.Config.Sites[c.domain]
 	return func(cf *request.Config) {
 		if exists {
 			log.Trace().Msg("used cookies for .pixiv.net")

@@ -1,6 +1,9 @@
 package config
 
-type Config struct {
+import "github.com/knadh/koanf/v2"
+
+type Configurator struct {
+	k        *koanf.Koanf
 	Settings Settings
 	Sites    map[string]SiteConfig
 }
