@@ -14,17 +14,7 @@ type LicenceKeyResponse struct {
 		BookmarkIdPrefix      string `json:"bookmarkIdPrefix"`
 		BookData              struct {
 			Extra []interface{} `json:"extra"`
-			Links struct {
-				Field1 []struct {
-					X           int         `json:"x"`
-					Y           int         `json:"y"`
-					Shape       string      `json:"shape"`
-					Width       int         `json:"width"`
-					Height      int         `json:"height"`
-					SpineIndex  int         `json:"spine_index"`
-					ExternalUrl interface{} `json:"external_url"`
-				} `json:"3"`
-			} `json:"links"`
+			Links interface{}   `json:"links"`
 			Spine []struct {
 				Path   string `json:"path"`
 				Width  int    `json:"width"`
@@ -71,17 +61,7 @@ type LicenceKeyResponse struct {
 		ImagedReflow   bool   `json:"imaged_reflow"`
 		DataForBrowser struct {
 			Extra []interface{} `json:"extra"`
-			Links struct {
-				Field1 []struct {
-					X           int         `json:"x"`
-					Y           int         `json:"y"`
-					Shape       string      `json:"shape"`
-					Width       int         `json:"width"`
-					Height      int         `json:"height"`
-					SpineIndex  int         `json:"spine_index"`
-					ExternalUrl interface{} `json:"external_url"`
-				} `json:"3"`
-			} `json:"links"`
+			Links interface{}   `json:"links"`
 			Spine []struct {
 				Path   string `json:"path"`
 				Width  int    `json:"width"`
