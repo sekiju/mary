@@ -1,12 +1,12 @@
 package comic_walker
 
 import (
-	"mary/internal/utils"
+	"mary/test"
 	"testing"
 )
 
 func TestComicWalker_Chapter(t *testing.T) {
-	utils.TestConnector(
+	test.Connector(
 		t,
 		New(),
 		"https://host.kireyev.org/mary-files/comic_walker.webp",

@@ -62,7 +62,6 @@ mary.exe https://shonenjumpplus.com/magazine/4856001361564051266
 ```yaml
 settings:
   debug:
-    enable: true
     url: https://shonenjumpplus.com/episode/14079602755375556618
   outputPath: output/
   clearOutputFolder: true
@@ -74,18 +73,16 @@ sites:
     purchase_free_books: true
 ```
 
-У приложения есть настройки по умолчанию, которые работают без создания `config.yaml`:
+Настройки по умолчанию:
 
 ```yaml
 settings:
-  debug:
-    enable: false
   outputPath: output/
   clearOutputFolder: true
   threads: T # T - количество логических ядер процессора
 ```
 
-И так как `settings` не обязательный параметр, то вы можете прописать только `sites`.
+`settings` не обязательный параметр, можно прописать только `sites`.
 
 Каждый веб-сайт из `sites` имеет обязательный параметр `session` для авторизации.<br>
 Чтобы добавить новый сайт в `sites`, сделайте отступ и введите [доменное имя](https://blog.skillfactory.ru/wp-content/uploads/2023/02/domen-4-3253604.png) сайта. Ещё раз сделайте отступ и добавьте ключ `session`.

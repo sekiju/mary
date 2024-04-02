@@ -1,12 +1,12 @@
 package pixiv
 
 import (
-	"mary/internal/utils"
+	"mary/test"
 	"testing"
 )
 
 func TestPixiv_Chapter(t *testing.T) {
-	utils.TestConnector(
+	test.Connector(
 		t,
 		New(),
 		"https://host.kireyev.org/mary-files/pixiv.png",

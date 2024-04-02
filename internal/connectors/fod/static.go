@@ -122,7 +122,7 @@ type DetailResponse struct {
 		RegularPrice        int         `json:"regular_price"`
 		EpisodePriceStart   string      `json:"episode_price_start"`
 		EpisodePriceEnd     string      `json:"episode_price_end"`
-		CashbackRate        int         `json:"cashback_rate"`
+		CashbackRate        float32     `json:"cashback_rate"`
 		CashbackCloseDate   string      `json:"cashback_close_date"`
 		CashbackPoint       int         `json:"cashback_point"`
 		DiscountRate        int         `json:"discount_rate"`
@@ -185,7 +185,7 @@ type DetailResponse struct {
 		RegularPrice      int       `json:"regular_price"`
 		EpisodePriceStart string    `json:"episode_price_start"`
 		EpisodePriceEnd   string    `json:"episode_price_end"`
-		CashbackRate      int       `json:"cashback_rate"`
+		CashbackRate      float32   `json:"cashback_rate"`
 		CashbackCloseDate string    `json:"cashback_close_date"`
 		CashbackPoint     int       `json:"cashback_point"`
 		DiscountRate      int       `json:"discount_rate"`

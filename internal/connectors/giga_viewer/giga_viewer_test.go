@@ -1,12 +1,12 @@
 package giga_viewer
 
 import (
-	"mary/internal/utils"
+	"mary/test"
 	"testing"
 )
 
 func TestGigaViewer_Chapter_ShonenJumpPlus(t *testing.T) {
-	utils.TestConnector(
+	test.Connector(
 		t,
 		New("shonenjumpplus.com"),
 		"https://host.kireyev.org/mary-files/shonenjumpplus.jpg?",

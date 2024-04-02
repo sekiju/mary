@@ -2,7 +2,8 @@ package comic_webnewtype
 
 import (
 	"mary/internal/static"
-	"mary/internal/utils"
+	"mary/test"
+
 	"net/url"
 	"testing"
 )
@@ -29,7 +30,7 @@ func TestComicNewtype_ResolveType(t *testing.T) {
 }
 
 func TestComicNewtype_Chapter(t *testing.T) {
-	utils.TestConnector(
+	test.Connector(
 		t,
 		New(),
 		"https://host.kireyev.org/mary-files/comic_webnewtype.jpg",

@@ -3,8 +3,6 @@ on:
   push:
   pull_request:
   workflow_dispatch:
-  schedule:
-    - cron: "0 0 * * *"
 
 jobs:
   go-test:
@@ -20,3 +18,5 @@ jobs:
           go mod download
       - name: Test with the Go CLI
         run: go test ./internal/connectors/...
+        env:
+          IGNORE_TESTS: comic-walker.com

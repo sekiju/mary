@@ -22,13 +22,13 @@ func defaultConfig() *Configurator {
 
 	return &Configurator{
 		k: k,
-		Settings: Settings{
-			Debug:             DebugSettings{Enable: false, Url: ""},
+		Settings: &settings{
+			Debug:             &debugSettings{Url: ""},
 			OutputPath:        "output/",
 			ClearOutputFolder: true,
 			Threads:           runtime.NumCPU(),
 		},
-		Sites: map[string]SiteConfig{},
+		Sites: map[string]*siteConfig{},
 	}
 }
 

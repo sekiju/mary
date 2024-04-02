@@ -1,12 +1,12 @@
 package yanmaga
 
 import (
-	"mary/internal/utils"
+	"mary/test"
 	"testing"
 )
 
 func TestYanmaga_Chapter(t *testing.T) {
-	utils.TestConnector(
+	test.Connector(
 		t,
 		New(),
 		"https://host.kireyev.org/mary-files/yanmaga.jpg",

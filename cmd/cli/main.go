@@ -38,13 +38,13 @@ func run() error {
 		return err
 	}
 
-	if !config.Config.Settings.Debug.Enable {
+	if config.Config.Settings.Debug != nil {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
 
 	var arg string
 	if len(os.Args) < 2 {
-		if config.Config.Settings.Debug.Enable && len(config.Config.Settings.Debug.Url) > 0 {
+		if config.Config.Settings.Debug != nil && len(config.Config.Settings.Debug.Url) > 0 {
 			arg = config.Config.Settings.Debug.Url
 			log.Trace().Msgf("debug url: %s", arg)
 		} else {

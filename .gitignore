@@ -1,15 +1,15 @@
-# IDE's
+# ide
 .idea/
-.vscode/
 
-# Runtime folders
+# runtime folders
 output/
-bin/
+build/
 
-# Debug
-tests/
+# debug
+test/assets/
 cover.out
 vendor/
 
-# Config
+# private
 config.yaml
+.
