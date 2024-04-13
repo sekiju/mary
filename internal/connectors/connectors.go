@@ -3,7 +3,6 @@ package connectors
 import (
 	"mary/internal/connectors/comic_walker"
 	"mary/internal/connectors/comic_webnewtype"
-	"mary/internal/connectors/fod"
 	"mary/internal/connectors/giga_viewer"
 	"mary/internal/connectors/manga_bilibili"
 	"mary/internal/connectors/pixiv"
@@ -38,7 +37,6 @@ func init() {
 		pixiv.New(),
 		comic_webnewtype.New(),
 		manga_bilibili.New(),
-		fod.New(),
 		comic_valkyrie.New(),
 		cmoa.New(),
 		storia_takeshobo.New(),
