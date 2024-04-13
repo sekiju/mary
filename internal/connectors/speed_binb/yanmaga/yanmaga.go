@@ -1,35 +1,36 @@
 package yanmaga
 
 import (
+	"mary/internal/config"
 	"mary/internal/connectors/speed_binb"
 	"mary/internal/static"
 	"mary/pkg/request"
 	"net/url"
 )
 
-type Yanmanga struct {
+type Yanmaga struct {
 	domain string
 	binb   *speed_binb.SpeedBinb
 }
 
-func (c *Yanmanga) Data() *static.ConnectorData {
+func (c *Yanmaga) Data() *static.ConnectorData {
 	return &static.ConnectorData{
 		Domain:               c.domain,
-		AuthorizationStatus:  static.AuthorizationStatusNay,
+		AuthorizationStatus:  static.AuthorizationStatusOptional,
 		ChapterListAvailable: true,
 	}
 }
 
-func (c *Yanmanga) ResolveType(_ url.URL) (static.UrlType, error) {
+func (c *Yanmaga) ResolveType(_ url.URL) (static.UrlType, error) {
 	return static.UrlTypeChapter, nil
 }
 
-func (c *Yanmanga) Book(_ url.URL) (*static.Book, error) {
+func (c *Yanmaga) Book(_ url.URL) (*static.Book, error) {
 	return nil, static.MassiveDownloaderUnsupportedErr
 }
 
-func (c *Yanmanga) Chapter(uri url.URL) (*static.Chapter, error) {
-	document, err := request.Document(uri.String())
+func (c *Yanmaga) Chapter(uri url.URL) (*static.Chapter, error) {
+	document, err := request.Document(uri.String(), c.withCookies())
 	if err != nil {
 		return nil, err
 	}
@@ -41,13 +42,22 @@ func (c *Yanmanga) Chapter(uri url.URL) (*static.Chapter, error) {
 	}, nil
 }
 
-func (c *Yanmanga) Pages(chapterID any, imageChan chan<- static.Image) error {
+func (c *Yanmaga) Pages(chapterID any, imageChan chan<- static.Image) error {
 	return c.binb.Pages(chapterID.(url.URL), imageChan, nil)
 }
 
-func New() *Yanmanga {
+func (c *Yanmaga) withCookies() request.OptsFn {
+	connectorConfig, exists := config.Config.Sites[c.domain]
+	return func(cf *request.Config) {
+		if exists {
+			cf.Headers["Cookie"] = connectorConfig.Session
+		}
+	}
+}
+
+func New() *Yanmaga {
 	domain := "yanmaga.jp"
-	return &Yanmanga{
+	return &Yanmaga{
 		domain: domain,
 		binb:   speed_binb.New(domain),
 	}
