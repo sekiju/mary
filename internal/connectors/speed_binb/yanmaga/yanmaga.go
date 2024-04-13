@@ -43,7 +43,8 @@ func (c *Yanmaga) Chapter(uri url.URL) (*static.Chapter, error) {
 }
 
 func (c *Yanmaga) Pages(chapterID any, imageChan chan<- static.Image) error {
-	return c.binb.Pages(chapterID.(url.URL), imageChan, nil)
+	withCookies := c.withCookies()
+	return c.binb.Pages(chapterID.(url.URL), imageChan, &withCookies)
 }
 
 func (c *Yanmaga) withCookies() request.OptsFn {
