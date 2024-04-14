@@ -6,6 +6,7 @@ import (
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
+	"github.com/rs/zerolog"
 	"os"
 	"runtime"
 	"strings"
@@ -47,4 +48,12 @@ func (c Configurator) Load() error {
 	}
 
 	return c.k.Unmarshal("", &Config)
+}
+
+func (c Configurator) LevelLogs() {
+	if Config.Settings.Debug != nil {
+		zerolog.SetGlobalLevel(zerolog.TraceLevel)
+	} else {
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	}
 }

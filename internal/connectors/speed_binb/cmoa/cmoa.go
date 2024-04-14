@@ -2,10 +2,11 @@ package cmoa
 
 import (
 	"github.com/rs/zerolog/log"
+	"github.com/sekiju/rq"
 	"mary/internal/config"
 	"mary/internal/connectors/speed_binb"
 	"mary/internal/static"
-	"mary/pkg/request"
+	"mary/internal/utils"
 	"net/url"
 )
 
@@ -31,7 +32,7 @@ func (c *Cmoa) Book(_ url.URL) (*static.Book, error) {
 }
 
 func (c *Cmoa) Chapter(uri url.URL) (*static.Chapter, error) {
-	document, err := request.Document(uri.String(), c.withCookies())
+	document, err := utils.Document(uri.String(), c.withCookies())
 	if err != nil {
 		return nil, err
 	}
@@ -48,9 +49,9 @@ func (c *Cmoa) Pages(chapterID any, imageChan chan<- static.Image) error {
 	return c.binb.Pages(chapterID.(url.URL), imageChan, &opts)
 }
 
-func (c *Cmoa) withCookies() request.OptsFn {
+func (c *Cmoa) withCookies() rq.OptsFn {
 	connectorConfig, exists := config.Config.Sites[c.domain]
-	return func(cf *request.Config) {
+	return func(cf *rq.Opts) {
 		if exists {
 			log.Trace().Msgf("used cookies for %s", c.domain)
 			cf.Headers["Cookie"] = connectorConfig.Session

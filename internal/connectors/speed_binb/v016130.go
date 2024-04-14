@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/rs/zerolog/log"
+	"github.com/sekiju/rq"
 	"image"
 	"image/draw"
 	"image/jpeg"
@@ -19,7 +20,7 @@ import (
 	"time"
 )
 
-func handleV016130(uri url.URL, apiUrl string, imageChan chan<- static.Image) error {
+func handleV016130(uri url.URL, apiUrl string, requestOpt rq.OptsFn, imageChan chan<- static.Image) error {
 	log.Trace().Msg("bimb version 016130")
 
 	cid := uri.Query().Get("cid")
@@ -35,16 +36,21 @@ func handleV016130(uri url.URL, apiUrl string, imageChan chan<- static.Image) er
 
 	log.Trace().Msgf("bibGetCntntInfo: %s", uri.String())
 
-	bibGetCntntInfoItems, err := request.Get[BibGetCntntInfo16130](uri.String())
+	res, err := rq.Get(uri.String(), requestOpt)
 	if err != nil {
 		return err
 	}
 
-	if bibGetCntntInfoItems.Body.Result != 1 {
+	var bibGetCntntInfoItems BibGetCntntInfo16130
+	if err := res.JSON(&bibGetCntntInfoItems); err != nil {
+		return err
+	}
+
+	if bibGetCntntInfoItems.Result != 1 {
 		return fmt.Errorf("invalid bibGetCntntInfoItems result")
 	}
 
-	bibGetCntntInfo := bibGetCntntInfoItems.Body.Items[0]
+	bibGetCntntInfo := bibGetCntntInfoItems.Items[0]
 
 	ctbl := pt(cid, sharingKey, bibGetCntntInfo.Ctbl)
 	ptbl := pt(cid, sharingKey, bibGetCntntInfo.Ptbl)
@@ -62,17 +68,25 @@ func handleV016130(uri url.URL, apiUrl string, imageChan chan<- static.Image) er
 			return err
 		}
 
-		//q.Set("dmytime", bibGetCntntInfo.ContentDate)
-		//sbcGetCntntUrl.RawQuery = q.Encode()
-
 		log.Trace().Msgf("sbcGetCntntUrl: %s", sbcGetCntntUrl.String())
 
-		sbcGetCntnt, err := request.Get[SbcGetCntnt](sbcGetCntntUrl.String())
+		res, err = rq.Get(sbcGetCntntUrl.String(), requestOpt, rq.SetHeader("Referer", "https://yanmaga.jp/"))
 		if err != nil {
 			return err
 		}
 
-		doc, err := goquery.NewDocumentFromReader(strings.NewReader(sbcGetCntnt.Body.Ttx))
+		log.Trace().Interface("res", res.RequestOpts).Msg("")
+
+		if res.Ok {
+			return fmt.Errorf("%d status code on sbcGetCntntUrl", res.RawResponse.StatusCode)
+		}
+
+		var sbcGetCntnt SbcGetCntnt
+		if err = res.JSON(&sbcGetCntnt); err != nil {
+			return err
+		}
+
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(sbcGetCntnt.Ttx))
 		if err != nil {
 			return err
 		}

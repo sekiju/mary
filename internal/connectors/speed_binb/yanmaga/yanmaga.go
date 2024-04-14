@@ -1,10 +1,11 @@
 package yanmaga
 
 import (
+	"github.com/sekiju/rq"
 	"mary/internal/config"
 	"mary/internal/connectors/speed_binb"
 	"mary/internal/static"
-	"mary/pkg/request"
+	"mary/internal/utils"
 	"net/url"
 )
 
@@ -30,7 +31,7 @@ func (c *Yanmaga) Book(_ url.URL) (*static.Book, error) {
 }
 
 func (c *Yanmaga) Chapter(uri url.URL) (*static.Chapter, error) {
-	document, err := request.Document(uri.String(), c.withCookies())
+	document, err := utils.Document(uri.String(), c.withCookies())
 	if err != nil {
 		return nil, err
 	}
@@ -43,15 +44,15 @@ func (c *Yanmaga) Chapter(uri url.URL) (*static.Chapter, error) {
 }
 
 func (c *Yanmaga) Pages(chapterID any, imageChan chan<- static.Image) error {
-	withCookies := c.withCookies()
-	return c.binb.Pages(chapterID.(url.URL), imageChan, &withCookies)
+	opts := c.withCookies()
+	return c.binb.Pages(chapterID.(url.URL), imageChan, &opts)
 }
 
-func (c *Yanmaga) withCookies() request.OptsFn {
+func (c *Yanmaga) withCookies() rq.OptsFn {
 	connectorConfig, exists := config.Config.Sites[c.domain]
-	return func(cf *request.Config) {
+	return func(cf *rq.Opts) {
 		if exists {
-			cf.Headers["Cookie"] = connectorConfig.Session
+			cf.Headers["cookie"] = connectorConfig.Session
 		}
 	}
 }

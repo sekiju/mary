@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/rs/zerolog/log"
+	"github.com/sekiju/rq"
 	"mary/internal/static"
 	"mary/internal/utils"
 	"mary/pkg/request"
@@ -12,7 +13,7 @@ import (
 	"strings"
 )
 
-func handleV016452(uri url.URL, apiUrl string, requestOpt request.OptsFn, imageChan chan<- static.Image) error {
+func handleV016452(uri url.URL, apiUrl string, requestOpt rq.OptsFn, imageChan chan<- static.Image) error {
 	log.Trace().Msg("bimb version 016452")
 
 	cid := uri.Query().Get("cid")
@@ -25,18 +26,23 @@ func handleV016452(uri url.URL, apiUrl string, requestOpt request.OptsFn, imageC
 	uri.Path = apiUrl
 	uri.RawQuery = q.Encode()
 
-	bibGetCntntInfoItems, err := request.Get[BibGetCntntInfo](uri.String(), requestOpt)
+	res, err := rq.Get(uri.String(), requestOpt)
 	if err != nil {
+		return err
+	}
+
+	var bibGetCntntInfoItems BibGetCntntInfo
+	if err := res.JSON(&bibGetCntntInfoItems); err != nil {
 		return err
 	}
 
 	log.Trace().Msgf("bibGetCntntInfo: %s", uri.String())
 
-	if bibGetCntntInfoItems.Body.Result != 1 {
+	if bibGetCntntInfoItems.Result != 1 {
 		return fmt.Errorf("invalid bibGetCntntInfoItems result")
 	}
 
-	bibGetCntntInfo := bibGetCntntInfoItems.Body.Items[0]
+	bibGetCntntInfo := bibGetCntntInfoItems.Items[0]
 
 	ctbl := pt(cid, sharingKey, bibGetCntntInfo.Ctbl)
 	ptbl := pt(cid, sharingKey, bibGetCntntInfo.Ptbl)

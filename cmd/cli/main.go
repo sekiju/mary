@@ -38,9 +38,7 @@ func run() error {
 		return err
 	}
 
-	if config.Config.Settings.Debug != nil {
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	}
+	config.Config.LevelLogs()
 
 	var arg string
 	if len(os.Args) < 2 {
