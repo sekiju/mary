@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	json "github.com/bytedance/sonic"
 	"github.com/rs/zerolog/log"
-	"github.com/sekiju/htt"
 	"github.com/sekiju/mdl/internal/renamer"
 	"github.com/sekiju/mdl/sdk/manga"
 	"image"
@@ -15,21 +15,22 @@ import (
 	"image/png"
 	"net/url"
 	"regexp"
+	"resty.dev/v3"
 	"strconv"
 	"strings"
 )
 
 type Extractor struct {
-	req *htt.Request
+	req *resty.Request
 }
 
 func (e *Extractor) FindChapterPages(chapter *manga.Chapter) ([]*manga.Page, error) {
 	res, err := e.req.Get(chapter.URL)
-	if err != nil || res.StatusCode != 200 {
+	if err != nil || res.StatusCode() != 200 {
 		return nil, manga.ErrChapterNotFound
 	}
 
-	doc, err := goquery.NewDocumentFromReader(res.Body)
+	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(res.Bytes()))
 	if err != nil {
 		return nil, err
 	}
@@ -65,13 +66,13 @@ func (e *Extractor) v016061(parsedURL *url.URL, content *goquery.Selection) ([]*
 		indexNamer := renamer.New(len(tPages))
 
 		for i, src := range tPages {
-			res, err := htt.New().Get(parsedURL.String() + "/" + src)
+			res, err := resty.New().R().Get(parsedURL.String() + "/" + src)
 			if err != nil {
 				return nil, err
 			}
 
 			var ptImg Ptimg
-			if err = res.JSON(&ptImg); err != nil {
+			if err = json.Unmarshal(res.Bytes(), &ptImg); err != nil {
 				return nil, err
 			}
 
@@ -142,7 +143,7 @@ func (e *Extractor) v016452(parsedURL *url.URL, apiURL string) ([]*manga.Page, e
 	}
 
 	var bibGetCntntInfoItems BibGetCntntInfo
-	if err = res.JSON(&bibGetCntntInfoItems); err != nil {
+	if err = json.Unmarshal(res.Bytes(), &bibGetCntntInfoItems); err != nil {
 		return nil, err
 	}
 
@@ -174,7 +175,7 @@ func (e *Extractor) v016452(parsedURL *url.URL, apiURL string) ([]*manga.Page, e
 	}
 
 	var sbcGetCntn SbcGetCntnt
-	if err = res.JSON(&sbcGetCntn); err != nil {
+	if err = json.Unmarshal(res.Bytes(), &sbcGetCntn); err != nil {
 		return nil, err
 	}
 
@@ -245,12 +246,12 @@ func (e *Extractor) decode016130(imgSrc string, ctbl, ptbl []string) manga.Decod
 	}
 }
 
-func New(requests ...*htt.Request) *Extractor {
-	var req *htt.Request
+func New(requests ...*resty.Request) *Extractor {
+	var req *resty.Request
 	if len(requests) > 0 {
 		req = requests[0]
 	} else {
-		req = htt.New()
+		req = resty.New().R()
 	}
 
 	return &Extractor{req}

@@ -3,12 +3,13 @@ package ganma
 import (
 	"errors"
 	"fmt"
-	"github.com/sekiju/htt"
+	json "github.com/bytedance/sonic"
 	util "github.com/sekiju/mdl/extractor/util"
 	"github.com/sekiju/mdl/internal/renamer"
 	"github.com/sekiju/mdl/sdk/manga"
 	"net/url"
 	"regexp"
+	"resty.dev/v3"
 	"strconv"
 )
 
@@ -25,31 +26,28 @@ func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
 		return nil, manga.ErrCredentialsRequired
 	}
 
-	res, err := htt.New().Get(URL)
+	res, err := resty.New().R().Get(URL)
 	if err != nil {
 		return nil, err
 	}
 
-	text, err := res.Text()
-	if err != nil {
-		return nil, err
-	}
+	text := res.String()
 
 	mangaID, err := util.ExtractStringFromHTML(text, `\"magazineId\":\"`, `\"`)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err = htt.New().
+	res, err = resty.New().R().
 		SetHeader("Cookie", *e.settings.Cookie).
 		SetHeader("X-From", "https://reader.ganma.jp/api/").
-		Getf("https://reader.ganma.jp/api/3.2/magazines/%s", mangaID)
+		Get(fmt.Sprintf("https://reader.ganma.jp/api/3.2/magazines/%s", mangaID))
 	if err != nil {
 		return nil, err
 	}
 
 	var magazine magazineResult
-	if err = res.JSON(&magazine); err != nil {
+	if err = json.Unmarshal(res.Bytes(), &magazine); err != nil {
 		return nil, err
 	}
 
@@ -84,15 +82,12 @@ func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
 	if util.IsValidUUID(matches[1]) {
 		mangaID = matches[1]
 	} else {
-		res, err := htt.New().Get(URL)
+		res, err := resty.New().R().Get(URL)
 		if err != nil {
 			return nil, err
 		}
 
-		text, err := res.Text()
-		if err != nil {
-			return nil, err
-		}
+		text := res.String()
 
 		mangaID, err = util.ExtractStringFromHTML(text, `\"magazineId\":\"`, `\"`)
 		if err != nil {
@@ -100,16 +95,16 @@ func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
 		}
 	}
 
-	res, err := htt.New().
+	res, err := resty.New().R().
 		SetHeader("Cookie", *e.settings.Cookie).
 		SetHeader("X-From", "https://reader.ganma.jp/api/").
-		Getf("https://reader.ganma.jp/api/3.2/magazines/%s", mangaID)
+		Get(fmt.Sprintf("https://reader.ganma.jp/api/3.2/magazines/%s", mangaID))
 	if err != nil {
 		return nil, err
 	}
 
 	var magazine magazineResult
-	if err = res.JSON(&magazine); err != nil {
+	if err = json.Unmarshal(res.Bytes(), &magazine); err != nil {
 		return nil, err
 	}
 
@@ -130,23 +125,27 @@ func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
 }
 
 func (e *Extractor) FindChapterPages(chapter *manga.Chapter) ([]*manga.Page, error) {
-	res, err := htt.New().
+	res, err := resty.New().R().
 		SetHeader("Cookie", *e.settings.Cookie).
 		SetHeader("X-From", "https://reader.ganma.jp/api/").
-		Getf(
+		Get(fmt.Sprintf(
 			"https://ganma.jp/api/graphql?operationName=MagazineStoryReaderQuery&variables=%s&extensions=%s",
 			url.QueryEscape(fmt.Sprintf(`{"magazineIdOrAlias":%q,"storyId":%q,"publicKey":null}`, chapter.MangaID, chapter.ID)),
 			url.QueryEscape(fmt.Sprintf(`{"persistedQuery":{"version":1,"sha256Hash":%q}}`, sha256hash)),
-		)
+		))
 	if err != nil {
 		return nil, err
 	}
 
-	// todo: handle STORY_COUNT_LIMITED == PaidChapter
-
 	var reader readerResult
-	if err = res.JSON(&reader); err != nil {
+	if err = json.Unmarshal(res.Bytes(), &reader); err != nil {
 		return nil, err
+	}
+
+	for _, gqlErr := range reader.Errors {
+		if gqlErr.Extensions.Code == "STORY_COUNT_LIMITED" {
+			return nil, manga.ErrPaidChapter
+		}
 	}
 
 	pages := make([]*manga.Page, reader.Data.Magazine.StoryContents.PageImages.PageCount)
@@ -168,32 +167,32 @@ func (e *Extractor) SetSettings(settings manga.Settings) {
 }
 
 func (e *Extractor) GenerateCookie() (string, error) {
-	res, err := htt.New().SetHeader("X-From", "https://reader.ganma.jp/api/").Post("https://reader.ganma.jp/api/1.0/account")
+	res, err := resty.New().R().SetHeader("X-From", "https://reader.ganma.jp/api/").Post("https://reader.ganma.jp/api/1.0/account")
 	if err != nil {
 		return "", err
 	}
 
-	if res.StatusCode != 200 {
+	if res.StatusCode() != 200 {
 		return "", errors.New("failed to create account")
 	}
 
 	var createAccount createAccountResponse
-	if err = res.JSON(&createAccount); err != nil {
+	if err = json.Unmarshal(res.Bytes(), &createAccount); err != nil {
 		return "", err
 	}
 
-	res, err = htt.New().SetHeader("X-From", "https://reader.ganma.jp/api/").
-		Body(createAccount.Root).
+	res, err = resty.New().R().SetHeader("X-From", "https://reader.ganma.jp/api/").
+		SetBody(createAccount.Root).
 		Post("https://reader.ganma.jp/api/3.0/session")
 	if err != nil {
 		return "", err
 	}
 
-	if res.StatusCode != 200 {
+	if res.StatusCode() != 200 {
 		return "", errors.New("failed to login with generated account")
 	}
 
-	return res.Header.Get("Set-Cookie"), nil
+	return res.Header().Get("Set-Cookie"), nil
 }
 
 func New() (manga.Extractor, error) {

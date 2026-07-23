@@ -5,16 +5,18 @@ import (
 	"flag"
 	"fmt"
 	"github.com/Masterminds/semver"
+	json "github.com/bytedance/sonic"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/sekiju/htt"
 	"github.com/sekiju/mdl/config"
 	"github.com/sekiju/mdl/constant"
 	"github.com/sekiju/mdl/downloader"
 	"github.com/sekiju/mdl/extractor"
 	"github.com/sekiju/mdl/internal/util"
+	"github.com/sekiju/mdl/sdk/manga"
 	"net/url"
 	"os"
+	"resty.dev/v3"
 	"sort"
 	"strings"
 	"time"
@@ -82,11 +84,10 @@ func run() error {
 
 	if config.Params.Application.CheckUpdates {
 		if err := checkForUpdates(); err != nil {
-			return err
+			log.Warn().Err(err).Msg("Failed to check for updates, continuing")
 		}
 	}
 
-	fmt.Println(config.Params.DownloadChapters)
 	chapterURLs := getChapterURLs()
 
 	if config.Params.ListChaptersMode {
@@ -99,6 +100,11 @@ func run() error {
 			ext, err := extractor.NewExtractor(parsedURL.Hostname())
 			if err != nil {
 				return err
+			}
+
+			if listing, ok := ext.(manga.ChapterListingFeature); ok && !listing.SupportsChapterListing() {
+				log.Warn().Str("url", chapterURL).Msg("This site does not support chapter listing, skipping")
+				continue
 			}
 
 			chapters, err := ext.FindChapters(chapterURL)
@@ -128,13 +134,13 @@ func run() error {
 func checkForUpdates() error {
 	log.Trace().Msgf("Current version: %s | Checking for updates...", version)
 
-	res, err := htt.New().Get("https://api.github.com/repos/sekiju/mdl/tags")
+	res, err := resty.New().R().Get("https://api.github.com/repos/sekiju/mdl/tags")
 	if err != nil {
 		return err
 	}
 
 	var tags []map[string]interface{}
-	if err = res.JSON(&tags); err != nil {
+	if err = json.Unmarshal(res.Bytes(), &tags); err != nil {
 		return err
 	}
 
@@ -142,7 +148,12 @@ func checkForUpdates() error {
 
 	var versions []*semver.Version
 	for _, tag := range tags {
-		if v, err := semver.NewVersion(tag["name"].(string)); err == nil && v.GreaterThan(currentVersion) {
+		name, ok := tag["name"].(string)
+		if !ok {
+			continue
+		}
+
+		if v, err := semver.NewVersion(name); err == nil && v.GreaterThan(currentVersion) {
 			versions = append(versions, v)
 		}
 	}

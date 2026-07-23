@@ -75,6 +75,12 @@ type magazineResult struct {
 }
 
 type readerResult struct {
+	Errors []struct {
+		Message    string `json:"message"`
+		Extensions struct {
+			Code string `json:"code"`
+		} `json:"extensions"`
+	} `json:"errors"`
 	Data struct {
 		Magazine struct {
 			MagazineId string `json:"magazineId"`

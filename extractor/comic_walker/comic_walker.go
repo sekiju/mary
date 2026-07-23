@@ -3,12 +3,15 @@ package comic_walker
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/sekiju/htt"
+	json "github.com/bytedance/sonic"
 	"github.com/sekiju/mdl/internal/renamer"
 	"github.com/sekiju/mdl/sdk/manga"
 	"regexp"
+	"resty.dev/v3"
 	"strconv"
 )
+
+var httpClient = resty.New()
 
 type Extractor struct {
 	settings *manga.Settings
@@ -22,17 +25,17 @@ func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
 		return nil, err
 	}
 
-	res, err := htt.New().Getf("https://comic-walker.com/api/contents/details/episode?workCode=%s&episodeType=first", parsedURL.WorkCode)
+	res, err := httpClient.R().Get(fmt.Sprintf("https://comic-walker.com/api/contents/details/episode?workCode=%s&episodeType=first", parsedURL.WorkCode))
 	if err != nil {
 		return nil, err
 	}
 
-	if res.StatusCode == 404 {
+	if res.StatusCode() == 404 {
 		return nil, manga.ErrMangaNotFound
 	}
 
 	var episodeResult EpisodeResult
-	if err = res.JSON(&episodeResult); err != nil {
+	if err = json.Unmarshal(res.Bytes(), &episodeResult); err != nil {
 		return nil, err
 	}
 
@@ -49,13 +52,13 @@ func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
 
 	var fn searchFn
 	fn = func(episodeID string) ([]*manga.Chapter, error) {
-		res, err = htt.New().Getf("https://comic-walker.com/api/contents/viewer-jump-forward?episodeId=%s", episodeID)
+		res, err = httpClient.R().Get(fmt.Sprintf("https://comic-walker.com/api/contents/viewer-jump-forward?episodeId=%s", episodeID))
 		if err != nil {
 			return nil, err
 		}
 
 		var viewerJumpForwardResult ViewerJumpForwardResult
-		if err = res.JSON(&viewerJumpForwardResult); err != nil {
+		if err = json.Unmarshal(res.Bytes(), &viewerJumpForwardResult); err != nil {
 			return nil, err
 		}
 
@@ -84,17 +87,17 @@ func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
 		return nil, err
 	}
 
-	res, err := htt.New().Getf("https://comic-walker.com/api/contents/details/episode?workCode=%s&episodeCode=%s&episodeType=first", parsedURL.WorkCode, parsedURL.EpisodeCode)
+	res, err := httpClient.R().Get(fmt.Sprintf("https://comic-walker.com/api/contents/details/episode?workCode=%s&episodeCode=%s&episodeType=first", parsedURL.WorkCode, parsedURL.EpisodeCode))
 	if err != nil {
 		return nil, err
 	}
 
-	if res.StatusCode == 404 {
+	if res.StatusCode() == 404 {
 		return nil, manga.ErrChapterNotFound
 	}
 
 	var episodeResult EpisodeResult
-	if err = res.JSON(&episodeResult); err != nil {
+	if err = json.Unmarshal(res.Bytes(), &episodeResult); err != nil {
 		return nil, err
 	}
 
@@ -109,17 +112,17 @@ func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
 }
 
 func (e *Extractor) FindChapterPages(chapter *manga.Chapter) ([]*manga.Page, error) {
-	res, err := htt.New().Getf("https://comic-walker.com/api/contents/viewer?episodeId=%s&imageSizeType=width%%3A1284", chapter.ID)
+	res, err := httpClient.R().Get(fmt.Sprintf("https://comic-walker.com/api/contents/viewer?episodeId=%s&imageSizeType=width%%3A1284", chapter.ID))
 	if err != nil {
 		return nil, err
 	}
 
-	if res.StatusCode == 404 {
+	if res.StatusCode() == 404 {
 		return nil, manga.ErrChapterNotFound
 	}
 
 	var viewerResult ViewerResult
-	if err = res.JSON(&viewerResult); err != nil {
+	if err = json.Unmarshal(res.Bytes(), &viewerResult); err != nil {
 		return nil, err
 	}
 

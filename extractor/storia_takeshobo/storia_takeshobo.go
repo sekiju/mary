@@ -1,11 +1,12 @@
 package storia_takeshobo
 
 import (
+	"bytes"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/sekiju/htt"
 	"github.com/sekiju/mdl/extractor/template/speed_binb"
 	"github.com/sekiju/mdl/sdk/manga"
 	"regexp"
+	"resty.dev/v3"
 )
 
 type Extractor struct {
@@ -13,8 +14,11 @@ type Extractor struct {
 }
 
 func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
-	//TODO implement me
-	panic("implement me")
+	return nil, manga.ErrChapterListingUnsupported
+}
+
+func (e *Extractor) SupportsChapterListing() bool {
+	return false
 }
 
 var re = regexp.MustCompile(`https://storia.takeshobo.co.jp/_files/([a-zA-Z0-9_]*)/(\d*)`)
@@ -25,12 +29,12 @@ func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
 		return nil, manga.ErrInvalidURLFormat
 	}
 
-	res, err := htt.New().Get(URL)
+	res, err := resty.New().R().Get(URL)
 	if err != nil {
 		return nil, err
 	}
 
-	doc, err := goquery.NewDocumentFromReader(res.Body)
+	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(res.Bytes()))
 	if err != nil {
 		return nil, err
 	}

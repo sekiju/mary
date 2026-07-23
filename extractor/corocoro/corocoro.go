@@ -5,12 +5,12 @@ import (
 	"crypto/cipher"
 	"encoding/hex"
 	"fmt"
-	"github.com/goccy/go-json"
-	"github.com/sekiju/htt"
+	json "github.com/bytedance/sonic"
 	"github.com/sekiju/mdl/extractor/util"
 	"github.com/sekiju/mdl/internal/renamer"
 	"github.com/sekiju/mdl/sdk/manga"
 	"regexp"
+	"resty.dev/v3"
 	"strings"
 )
 
@@ -19,8 +19,11 @@ type Extractor struct {
 }
 
 func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
-	//TODO implement me
-	panic("implement me")
+	return nil, manga.ErrChapterListingUnsupported
+}
+
+func (e *Extractor) SupportsChapterListing() bool {
+	return false
 }
 
 var re = regexp.MustCompile(`https://www.corocoro.jp/chapter/(\d*)/viewer`)
@@ -31,7 +34,7 @@ func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
 		return nil, manga.ErrInvalidChapterURL
 	}
 
-	req := htt.New()
+	req := resty.New().R()
 	if e.settings.Cookie != nil {
 		req.SetHeader("Cookie", *e.settings.Cookie)
 	}
@@ -41,10 +44,7 @@ func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
 		return nil, err
 	}
 
-	html, err := res.Text()
-	if err != nil {
-		return nil, err
-	}
+	html := res.String()
 
 	chapterMainName, err := util.ExtractStringFromHTML(html, `\"chapterMainName\":\"`, `\"`)
 	if err != nil {
@@ -62,7 +62,7 @@ func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
 }
 
 func (e *Extractor) FindChapterPages(chapter *manga.Chapter) ([]*manga.Page, error) {
-	req := htt.New()
+	req := resty.New().R()
 	if e.settings.Cookie != nil {
 		req.SetHeader("Cookie", *e.settings.Cookie)
 	}
@@ -72,10 +72,7 @@ func (e *Extractor) FindChapterPages(chapter *manga.Chapter) ([]*manga.Page, err
 		return nil, err
 	}
 
-	html, err := res.Text()
-	if err != nil {
-		return nil, err
-	}
+	html := res.String()
 
 	jsonStr, err := util.ExtractStringFromHTML(html, `,\"pages\":`, `,\"directionRightToLeft\"`)
 	if err != nil {

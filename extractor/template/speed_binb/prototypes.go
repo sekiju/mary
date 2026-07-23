@@ -1,7 +1,7 @@
 package speed_binb
 
 import (
-	"github.com/goccy/go-json"
+	json "github.com/bytedance/sonic"
 	"image"
 	"regexp"
 	"strconv"

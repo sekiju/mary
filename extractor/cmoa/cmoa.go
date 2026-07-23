@@ -1,10 +1,10 @@
 package cmoa
 
 import (
-	"github.com/sekiju/htt"
 	"github.com/sekiju/mdl/extractor/template/speed_binb"
 	"github.com/sekiju/mdl/sdk/manga"
 	"regexp"
+	"resty.dev/v3"
 )
 
 type Extractor struct {
@@ -12,8 +12,11 @@ type Extractor struct {
 }
 
 func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
-	//TODO implement me
-	panic("implement me")
+	return nil, manga.ErrChapterListingUnsupported
+}
+
+func (e *Extractor) SupportsChapterListing() bool {
+	return false
 }
 
 func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
@@ -33,7 +36,11 @@ func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
 }
 
 func (e *Extractor) FindChapterPages(chapter *manga.Chapter) ([]*manga.Page, error) {
-	req := htt.New().SetHeader("Cookie", *e.settings.Cookie)
+	if e.settings.Cookie == nil {
+		return nil, manga.ErrCredentialsRequired
+	}
+
+	req := resty.New().R().SetHeader("Cookie", *e.settings.Cookie)
 	return speed_binb.New(req).FindChapterPages(chapter)
 }
 

@@ -1,12 +1,14 @@
 package giga_viewer
 
 import (
-	"github.com/sekiju/htt"
 	"github.com/sekiju/mdl/extractor/util"
 	"github.com/sekiju/mdl/internal/renamer"
 	"github.com/sekiju/mdl/sdk/manga"
+	"resty.dev/v3"
 	"strconv"
 )
+
+var httpClient = resty.New()
 
 type Extractor struct {
 	settings *manga.Settings
@@ -26,19 +28,16 @@ func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
 
 		visitedIDs[episodeURL] = true
 
-		res, err := htt.New().Get(episodeURL)
+		res, err := httpClient.R().Get(episodeURL)
 		if err != nil {
 			return nil, err
 		}
 
-		if res.StatusCode == 404 {
+		if res.StatusCode() == 404 {
 			return nil, manga.ErrMangaNotFound
 		}
 
-		html, err := res.Text()
-		if err != nil {
-			return nil, err
-		}
+		html := res.String()
 
 		episode, err := util.ExtractJSONFromHTML[episodeResult](html, `<script id='episode-json' type='text/json' data-value='`, `'></script>`)
 		if err != nil {
@@ -75,19 +74,16 @@ func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
 }
 
 func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
-	res, err := htt.New().Get(URL)
+	res, err := httpClient.R().Get(URL)
 	if err != nil {
 		return nil, err
 	}
 
-	if res.StatusCode == 404 {
+	if res.StatusCode() == 404 {
 		return nil, manga.ErrChapterNotFound
 	}
 
-	html, err := res.Text()
-	if err != nil {
-		return nil, err
-	}
+	html := res.String()
 
 	episode, err := util.ExtractJSONFromHTML[episodeResult](html, `<script id='episode-json' type='text/json' data-value='`, `'></script>`)
 	if err != nil {
@@ -105,7 +101,7 @@ func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
 }
 
 func (e *Extractor) FindChapterPages(chapter *manga.Chapter) ([]*manga.Page, error) {
-	req := htt.New().SetHeader("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1")
+	req := httpClient.R().SetHeader("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1")
 	if e.settings.Cookie != nil {
 		req.SetHeader("Cookie", *e.settings.Cookie)
 	}
@@ -116,14 +112,11 @@ func (e *Extractor) FindChapterPages(chapter *manga.Chapter) ([]*manga.Page, err
 		return nil, err
 	}
 
-	if res.StatusCode == 404 {
+	if res.StatusCode() == 404 {
 		return nil, manga.ErrChapterNotFound
 	}
 
-	html, err := res.Text()
-	if err != nil {
-		return nil, err
-	}
+	html := res.String()
 
 	episode, err := util.ExtractJSONFromHTML[episodeResult](html, `<script id='episode-json' type='text/json' data-value='`, `'></script>`)
 	if err != nil {

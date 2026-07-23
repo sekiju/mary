@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gen2brain/avif"
 	"github.com/gen2brain/webp"
-	"github.com/sekiju/htt"
 	"github.com/sekiju/mdl/config"
 	"github.com/sekiju/mdl/sdk/manga"
 	"image"
@@ -14,21 +13,21 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"resty.dev/v3"
 )
 
+var httpClient = resty.New()
+
 func getReader(page *manga.Page) (io.Reader, error) {
-	res, err := htt.New().SetHeaders(page.Headers).Get(page.URL)
+	res, err := httpClient.R().SetHeaders(page.Headers).Get(page.URL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download page: %w", err)
 	}
 
-	if page.Decode == nil {
-		return res.Body, nil
-	}
+	b := res.Bytes()
 
-	b, err := res.Bytes()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+	if page.Decode == nil {
+		return bytes.NewReader(b), nil
 	}
 
 	b, err = page.Decode(b)

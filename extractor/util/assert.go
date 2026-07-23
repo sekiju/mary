@@ -1,40 +1,32 @@
 package util
 
 import (
-	"bytes"
-	"github.com/sekiju/htt"
 	"github.com/sekiju/mdl/sdk/manga"
-	"github.com/stretchr/testify/assert"
+	"resty.dev/v3"
 	"testing"
 )
 
-func AssertImage(t *testing.T, expectedImageURL string, page *manga.Page) {
-	res, err := htt.New().Get(page.URL)
+// AssertImage downloads page.URL, decodes it if page.Decode is set, and
+// compares the result against a golden file committed under testdata/.
+//
+// Run tests with -update to regenerate the golden file from the current
+// live response (review the diff before committing).
+func AssertImage(t *testing.T, goldenPath string, page *manga.Page) {
+	res, err := resty.New().R().Get(page.URL)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
+		return
 	}
 
-	actual, err := res.Bytes()
-	if err != nil {
-		t.Error(err)
-	}
+	actual := res.Bytes()
 
 	if page.Decode != nil {
 		actual, err = page.Decode(actual)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
+			return
 		}
 	}
 
-	res, err = htt.New().Get(expectedImageURL)
-	if err != nil {
-		t.Error(err)
-	}
-
-	expected, err := res.Bytes()
-	if err != nil {
-		t.Error(err)
-	}
-
-	assert.Equal(t, 0, bytes.Compare(actual, expected))
+	AssertGolden(t, goldenPath, actual)
 }
