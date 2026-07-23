@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  build-test:
+  lint-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,3 +29,22 @@ jobs:
 
       - name: go test
         run: go test ./...
+
+  changeset-check:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'pull_request'
+      && !contains(github.actor, 'dependabot')
+      && !contains(github.actor, 'renovate')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: install changie
+        run: go install github.com/miniscruff/changie@latest
+
+      - name: check changesets
+        run: changie check

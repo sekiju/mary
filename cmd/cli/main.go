@@ -25,7 +25,7 @@ import (
 	"time"
 )
 
-var version = "1.0.0"
+var version = "dev"
 
 func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339})
@@ -160,6 +160,11 @@ func run() error {
 }
 
 func checkForUpdates() (string, error) {
+	currentVersion, err := semver.NewVersion(version)
+	if err != nil {
+		return "", nil
+	}
+
 	log.Trace().Msgf("Current version: %s | Checking for updates...", version)
 
 	res, err := resty.New().R().Get("https://api.github.com/repos/sekiju/mdl/tags")
@@ -171,8 +176,6 @@ func checkForUpdates() (string, error) {
 	if err = json.Unmarshal(res.Bytes(), &tags); err != nil {
 		return "", err
 	}
-
-	currentVersion := semver.MustParse(version)
 
 	var versions []*semver.Version
 	for _, tag := range tags {
