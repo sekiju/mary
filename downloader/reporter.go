@@ -16,8 +16,7 @@ type ProgressReporter interface {
 	ChapterDone(chapterID string, duration time.Duration)
 }
 
-// defaultProgressReporter reproduces the zerolog output the CLI printed
-// before ProgressReporter existed.
+// defaultProgressReporter reproduces the zerolog output the CLI printed before ProgressReporter existed.
 type defaultProgressReporter struct{}
 
 func (defaultProgressReporter) ChapterStarted(url string) {

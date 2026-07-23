@@ -1,7 +1,3 @@
-// Package testutil provides shared e2e snapshot-testing helpers for
-// extractors. Tests hit real sites and hash downloaded page bytes instead of
-// storing images, so fixtures stay small and don't redistribute copyrighted
-// content.
 package testutil
 
 import (
@@ -24,8 +20,7 @@ type PageSnapshot struct {
 	SHA256   string `json:"sha256"`
 }
 
-// HashPages downloads and decodes every page, returning one PageSnapshot per
-// page in order.
+// HashPages downloads and decodes every page, returning one PageSnapshot per page in order.
 func HashPages(t *testing.T, pages []*manga.Page) []PageSnapshot {
 	t.Helper()
 
@@ -85,8 +80,7 @@ func readAll(resp *http.Response) ([]byte, error) {
 	}
 }
 
-// CompareSnapshot compares got against the JSON fixture at path, or writes
-// got to path when the -update flag is set.
+// CompareSnapshot compares got against the JSON fixture at path, or writes got to path when the -update flag is set.
 func CompareSnapshot(t *testing.T, path string, got []PageSnapshot) {
 	t.Helper()
 

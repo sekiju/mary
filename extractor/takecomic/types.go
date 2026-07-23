@@ -1,6 +1,6 @@
 package takecomic
 
-// EpisodeResponse is the JSON returned by GET /api/episodes/{id}.
+// EpisodeResponse is returned by GET /api/episodes/{id}.
 type EpisodeResponse struct {
 	Episode Episode `json:"episode"`
 }
@@ -35,7 +35,7 @@ type Summary struct {
 	NumLikes      int    `json:"numLikes"`
 }
 
-// ContentsInfoResponse is the JSON returned by GET /api/book/contentsInfo.
+// ContentsInfoResponse is returned by GET /api/book/contentsInfo.
 type ContentsInfoResponse struct {
 	TotalPages      int             `json:"totalPages"`
 	ScrollDirection string          `json:"scrollDirection"`

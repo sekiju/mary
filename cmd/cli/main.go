@@ -5,48 +5,29 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/url"
+	"os"
+	"os/signal"
+	"sort"
+	"strings"
+
 	semver "github.com/Masterminds/semver/v3"
 	json "github.com/bytedance/sonic"
 	"github.com/knst0/mdl/config"
 	"github.com/knst0/mdl/constant"
 	"github.com/knst0/mdl/extractor"
 	"github.com/knst0/mdl/internal/tui"
-	"github.com/knst0/mdl/internal/util"
 	"github.com/knst0/mdl/sdk/manga"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"net/url"
-	"os"
-	"os/signal"
 	"resty.dev/v3"
-	"sort"
-	"strings"
-	"time"
 )
 
 var version = "dev"
 
 func main() {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339})
-
-	isGUI := !util.IsRunningFromCLI()
-
 	if err := run(); err != nil {
-		log.Error().Err(err).Send()
-		if isGUI {
-			waitForInput()
-		}
 		os.Exit(1)
 	}
-
-	if isGUI {
-		waitForInput()
-	}
-}
-
-func waitForInput() {
-	fmt.Println("\nPress Enter to exit...")
-	_, _ = bufio.NewReader(os.Stdin).ReadBytes('\n')
 }
 
 func getChapterURLs() []string {
@@ -103,7 +84,7 @@ func run() error {
 
 	if config.Params.File.Application.CheckUpdates {
 		if msg, err := checkForUpdates(); err != nil {
-			log.Warn().Err(err).Msg("Failed to check for updates, continuing")
+			statusMessages = append(statusMessages, fmt.Sprintf("failed to check for updates: %s", err.Error()))
 		} else if msg != "" {
 			statusMessages = append(statusMessages, msg)
 		}

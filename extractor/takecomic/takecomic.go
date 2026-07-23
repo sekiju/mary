@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
-	_ "image/jpeg" // register JPEG decoder
+	_ "image/jpeg" // NOTE: register JPEG decoder
 	"image/png"
 	"regexp"
 	"sort"
@@ -29,14 +29,10 @@ var (
 	epURLRe    = regexp.MustCompile(`takecomic\.jp/episodes/([a-f0-9]+)`)
 )
 
-// Extractor implements manga.Extractor for takecomic.jp.
 type Extractor struct {
 	pluginutil.Base
 }
 
-// FindChapters returns all chapters for the series. This is a stub —
-// listing all episodes requires additional API calls. Use FindChapter
-// for single-episode extraction.
 func (e *Extractor) FindChapters(ctx context.Context, url string) ([]*manga.Chapter, error) {
 	chapter, err := e.FindChapter(ctx, url)
 	if err != nil {
@@ -45,7 +41,6 @@ func (e *Extractor) FindChapters(ctx context.Context, url string) ([]*manga.Chap
 	return []*manga.Chapter{chapter}, nil
 }
 
-// FindChapter extracts chapter metadata from a takecomic.jp episode URL.
 func (e *Extractor) FindChapter(ctx context.Context, url string) (*manga.Chapter, error) {
 	episodeID := extractEpisodeID(url)
 	if episodeID == "" {
@@ -73,7 +68,6 @@ func (e *Extractor) FindChapter(ctx context.Context, url string) (*manga.Chapter
 	return chapter, nil
 }
 
-// FindChapterPages downloads page metadata for the chapter.
 func (e *Extractor) FindChapterPages(ctx context.Context, chapter *manga.Chapter) ([]*manga.Page, error) {
 	viewerID := chapter.ID
 
@@ -82,7 +76,6 @@ func (e *Extractor) FindChapterPages(ctx context.Context, chapter *manga.Chapter
 		return nil, err
 	}
 
-	// Sort pages by their sort order
 	pages := ci.Result
 	sort.Slice(pages, func(i, j int) bool { return pages[i].Sort < pages[j].Sort })
 
@@ -116,7 +109,6 @@ func extractEpisodeID(url string) string {
 	return m[1]
 }
 
-// fetchEpisode calls GET /api/episodes/{id} and returns the episode data.
 func fetchEpisode(ctx context.Context, episodeID string) (*Episode, error) {
 	resp, err := httpClient.R().
 		SetContext(ctx).
@@ -138,7 +130,6 @@ func fetchEpisode(ctx context.Context, episodeID string) (*Episode, error) {
 	return &er.Episode, nil
 }
 
-// getViewerID extracts the comici viewer ID from the episode's content list.
 func getViewerID(ep *Episode) string {
 	for _, c := range ep.Content {
 		if c.Type == "viewer" && c.ViewerID != "" {
@@ -148,10 +139,7 @@ func getViewerID(ep *Episode) string {
 	return ""
 }
 
-// fetchContentsInfo calls GET /api/book/contentsInfo in two steps:
-// first page 0 to get totalPages, then all pages at once.
 func fetchContentsInfo(ctx context.Context, viewerID string) (*ContentsInfoResponse, error) {
-	// Step 1: get page 0 to learn totalPages.
 	resp, err := httpClient.R().
 		SetContext(ctx).
 		SetQueryParams(map[string]string{
@@ -179,7 +167,6 @@ func fetchContentsInfo(ctx context.Context, viewerID string) (*ContentsInfoRespo
 		return &first, nil
 	}
 
-	// Step 2: request all pages.
 	resp, err = httpClient.R().
 		SetContext(ctx).
 		SetQueryParams(map[string]string{
@@ -215,14 +202,6 @@ func parseScramble(raw string) []int {
 	return arr
 }
 
-// descrambleJPEG reverses the 4×4 grid shuffle used by the comici viewer.
-//
-// The image is split into a 4×4 grid (16 cells). Cell indices follow the
-// viewer's column-major order (rows vary fastest):
-//
-//	[0,0] [0,1] [0,2] [0,3] [1,0] [1,1] ... [3,3]
-//
-// scramble[i] = j means "destination cell i draws from source cell j".
 func descrambleJPEG(raw []byte, scramble []int) ([]byte, error) {
 	img, _, err := image.Decode(bytes.NewReader(raw))
 	if err != nil {
@@ -234,16 +213,13 @@ func descrambleJPEG(raw []byte, scramble []int) ([]byte, error) {
 
 	const gridCols, gridRows = 4, 4
 
-	// Precompute grid cell boundaries in column-major order.
-	// All cells have uniform size colW×rowH — the viewer clips every cell
-	// to Math.floor(w/4)×Math.floor(h/4), so the last row/col gets no extra pixels.
 	type cell struct{ x0, y0, x1, y1 int }
 	cells := make([]cell, scramblePieces)
 	colW := w / gridCols
 	rowH := h / gridRows
 	for c := 0; c < gridCols; c++ {
 		for r := 0; r < gridRows; r++ {
-			idx := c*gridRows + r // column-major: rows vary fastest
+			idx := c*gridRows + r
 			cells[idx] = cell{
 				x0: c * colW,
 				y0: r * rowH,
@@ -253,8 +229,6 @@ func descrambleJPEG(raw []byte, scramble []int) ([]byte, error) {
 		}
 	}
 
-	// Build destination image sized to the actual cell grid (drops dead
-	// pixels from the last row/col that the viewer never draws into).
 	dstW := colW * gridCols
 	dstH := rowH * gridRows
 	dst := image.NewRGBA(image.Rect(0, 0, dstW, dstH))
@@ -279,7 +253,6 @@ func init() {
 	registry.Register("takecomic.jp", registry.WithSession(New))
 }
 
-// New creates a new takecomic.jp extractor.
 func New() (manga.Extractor, error) {
 	return &Extractor{Base: pluginutil.Base{Settings: &manga.Settings{}}}, nil
 }

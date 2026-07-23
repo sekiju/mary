@@ -14,10 +14,6 @@ type (
 		GenerateCookie() (string, error)
 	}
 
-	// ChapterListingFeature is implemented by extractors that can list all
-	// chapters of a manga via FindChapters. Extractors that only support
-	// resolving a single chapter URL (FindChapter) should not implement it,
-	// so callers can check via a type assertion before invoking FindChapters.
 	ChapterListingFeature interface {
 		SupportsChapterListing() bool
 	}
@@ -42,6 +38,6 @@ type (
 		Filename string            `json:"filename"`
 		Index    uint              `json:"index"`
 		Headers  map[string]string `json:"headers"`
-		Decode   DecodeFunc        `json:"-"` // function value, not serializable
+		Decode   DecodeFunc        `json:"-"`
 	}
 )

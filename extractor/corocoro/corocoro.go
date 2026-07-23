@@ -258,7 +258,6 @@ func (r *protobufReader) parseViewer() viewerResponse {
 				if pi.src != "" {
 					resp.pages = append(resp.pages, pi)
 				}
-				// Ensure we're at the right position
 				r.pos = end
 			} else {
 				r.skipWireType(wireType)

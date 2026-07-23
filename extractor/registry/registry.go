@@ -8,7 +8,6 @@ import (
 	"sort"
 
 	"github.com/knst0/mdl/sdk/manga"
-	"github.com/rs/zerolog/log"
 )
 
 type Factory func(cookie *string) (manga.Extractor, error)
@@ -56,8 +55,6 @@ func WithSession(fn func() (manga.Extractor, error)) Factory {
 				if err != nil {
 					return nil, err
 				}
-
-				log.Info().Msgf("Cookie generated >>> %s", generatedCookie)
 
 				ext.SetSettings(manga.Settings{Cookie: &generatedCookie})
 			}
