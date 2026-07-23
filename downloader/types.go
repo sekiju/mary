@@ -2,8 +2,9 @@ package downloader
 
 import (
 	"context"
-	"github.com/knst0/mdl/sdk/manga"
 	"sync"
+
+	"github.com/knst0/mdl/sdk/manga"
 )
 
 type (
@@ -13,6 +14,7 @@ type (
 		ctx          context.Context
 		ch           chan *queueInfo
 		wg           sync.WaitGroup
+		stopOnce     sync.Once
 		downloadPage downloadPageFunc
 		reporter     ProgressReporter
 	}
@@ -20,6 +22,7 @@ type (
 	queueInfo struct {
 		URL       string
 		ChapterID string
+		Title     string
 		Pages     []*manga.Page
 	}
 )

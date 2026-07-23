@@ -3,10 +3,10 @@ package downloader
 import (
 	"context"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"github.com/knst0/mdl/config"
 	"github.com/knst0/mdl/extractor"
 	"github.com/knst0/mdl/sdk/manga"
+	"github.com/rs/zerolog/log"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -24,7 +24,9 @@ func (d *Downloader) Queue(URL string) {
 }
 
 func (d *Downloader) Stop() {
-	close(d.ch)
+	d.stopOnce.Do(func() {
+		close(d.ch)
+	})
 	d.wg.Wait()
 }
 
@@ -98,8 +100,8 @@ func (d *Downloader) run() {
 	semaphore := make(chan struct{}, chapterConcurrency())
 
 	for qi := range d.ch {
-		semaphore <- struct{}{}
 		go func(qi *queueInfo) {
+			semaphore <- struct{}{}
 			defer func() {
 				<-semaphore
 				d.wg.Done()
@@ -127,6 +129,8 @@ func (d *Downloader) run() {
 			}
 
 			qi.ChapterID = chapter.ID
+			qi.Title = chapter.Title
+			d.reporter.ChapterTitle(chapter.ID, chapter.Title)
 
 			pages, err := ext.FindChapterPages(d.ctx, chapter)
 			if err != nil {

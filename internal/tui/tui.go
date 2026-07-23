@@ -3,6 +3,9 @@ package tui
 import (
 	"context"
 	"fmt"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -13,6 +16,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/knst0/mdl/config"
 	"github.com/knst0/mdl/downloader"
 )
 
@@ -35,6 +39,12 @@ func (r *reporter) ChapterError(url, chapterID, msg string, err error) {
 func (r *reporter) PageDownloaded(chapterID string, index uint, total int, err error) {
 	if r.program != nil {
 		r.program.Send(pageMsg{chapterID: chapterID, index: index, total: total, err: err})
+	}
+}
+
+func (r *reporter) ChapterTitle(chapterID, title string) {
+	if r.program != nil {
+		r.program.Send(titleMsg{chapterID: chapterID, title: title})
 	}
 }
 
@@ -199,6 +209,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.finished++
 		}
 
+	case titleMsg:
+		s := m.stateFor("", msg.chapterID)
+		s.title = msg.title
+
 	case statusMsg:
 		m.statusLine = msg.text
 		cmds = append(cmds, m.nextStatus)
@@ -208,9 +222,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.viewport, vpCmd = m.viewport.Update(msg)
 	cmds = append(cmds, vpCmd)
 
-	if m.total > 0 && m.finished >= m.total {
-		return m, tea.Quit
-	}
 	return m, tea.Batch(cmds...)
 }
 
@@ -290,16 +301,26 @@ func (m *model) handleQueueKey(msg tea.KeyMsg) tea.Cmd {
 		m.textInput.Focus()
 		m.textInput.Reset()
 		return textinput.Blink
+
+	case "o":
+		m.openChapterFolder()
 	}
 
 	return nil
 }
 
-func (m *model) renderRow(s *chapterState, selected bool) string {
-	label := s.chapterID
-	if label == "" {
-		label = s.url
+func (m *model) chapterLabel(s *chapterState) string {
+	if s.title != "" {
+		return s.title
 	}
+	if s.chapterID != "" {
+		return s.chapterID
+	}
+	return s.url
+}
+
+func (m *model) renderRow(s *chapterState, selected bool) string {
+	label := m.chapterLabel(s)
 
 	prefix := "  "
 	if selected {
@@ -330,14 +351,18 @@ func (m *model) renderDetail() string {
 		return ""
 	}
 	var b strings.Builder
-	label := s.chapterID
-	if label == "" {
-		label = s.url
-	}
+	label := m.chapterLabel(s)
 	b.WriteString(dimStyle.Render("── detail ──────────────────────────────"))
 	b.WriteString("\n")
-	b.WriteString(fmt.Sprintf("ID:       %s\n", label))
+	if s.chapterID != "" {
+		b.WriteString(fmt.Sprintf("ID:       %s\n", s.chapterID))
+	}
+	if s.title != "" {
+		b.WriteString(fmt.Sprintf("Title:    %s\n", s.title))
+	}
+	b.WriteString(fmt.Sprintf("Name:     %s\n", label))
 	b.WriteString(fmt.Sprintf("URL:      %s\n", s.url))
+	b.WriteString(fmt.Sprintf("Folder:   %s\n", filepath.Join(config.Params.File.Output.Directory, s.chapterID)))
 	b.WriteString(fmt.Sprintf("Pages:    %d/%d (%d failed)\n", s.donePages, s.totalPages, s.failedPages))
 	if s.done {
 		b.WriteString(fmt.Sprintf("Duration: %s\n", s.duration.Round(time.Millisecond)))
@@ -415,6 +440,31 @@ func (m *model) viewQueue() string {
 		m.help.View(keys),
 		m.statusBar(),
 	)
+}
+
+func openFolder(path string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("explorer", path)
+	case "darwin":
+		cmd = exec.Command("open", path)
+	default:
+		cmd = exec.Command("xdg-open", path)
+	}
+	return cmd.Start()
+}
+
+func (m *model) openChapterFolder() {
+	if m.selected < 0 || m.selected >= len(m.order) {
+		return
+	}
+	s := m.states[m.order[m.selected]]
+	if s == nil || s.chapterID == "" {
+		return
+	}
+	folder := filepath.Join(config.Params.File.Output.Directory, s.chapterID)
+	_ = openFolder(folder)
 }
 
 func Run(ctx context.Context, cancel context.CancelFunc, urls []string, version string, statusMsgs []string) error {

@@ -23,6 +23,7 @@ const (
 type chapterState struct {
 	url         string
 	chapterID   string
+	title       string
 	totalPages  int
 	donePages   int
 	failedPages int
@@ -48,6 +49,10 @@ type (
 	doneMsg struct {
 		chapterID string
 		duration  time.Duration
+	}
+	titleMsg struct {
+		chapterID string
+		title     string
 	}
 	statusMsg struct{ text string }
 )

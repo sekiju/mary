@@ -10,6 +10,7 @@ import (
 // downloads, decoupling downloader from any specific logging/UI backend.
 type ProgressReporter interface {
 	ChapterStarted(url string)
+	ChapterTitle(chapterID, title string)
 	ChapterError(url, chapterID, msg string, err error)
 	PageDownloaded(chapterID string, index uint, total int, err error)
 	ChapterDone(chapterID string, duration time.Duration)
@@ -21,6 +22,10 @@ type defaultProgressReporter struct{}
 
 func (defaultProgressReporter) ChapterStarted(url string) {
 	log.Info().Str("url", url).Msg("Downloading next chapter in queue")
+}
+
+func (defaultProgressReporter) ChapterTitle(chapterID, title string) {
+	log.Info().Str("chapterId", chapterID).Str("title", title).Msg("Chapter title")
 }
 
 func (defaultProgressReporter) ChapterError(url, chapterID, msg string, err error) {
