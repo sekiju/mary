@@ -1,6 +1,7 @@
 package downloader
 
 import (
+	"fmt"
 	"github.com/rs/zerolog/log"
 	"github.com/sekiju/mdl/config"
 	"github.com/sekiju/mdl/extractor"
@@ -41,6 +42,8 @@ func (d *Downloader) downloadImages(qi *queueInfo) error {
 	}
 
 	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var failedPages int
 	semaphore := make(chan struct{}, config.Params.Application.MaxParallelDownloads)
 
 	for _, page := range qi.Pages {
@@ -54,12 +57,19 @@ func (d *Downloader) downloadImages(qi *queueInfo) error {
 
 			if err := d.downloadPage(destination, page); err != nil {
 				log.Error().Err(err).Msgf("Failed to download page #%d", page.Index)
+				mu.Lock()
+				failedPages++
+				mu.Unlock()
 				return
 			}
 		}(page)
 	}
 
 	wg.Wait()
+
+	if failedPages > 0 {
+		return fmt.Errorf("failed to download %d of %d page(s)", failedPages, len(qi.Pages))
+	}
 
 	return nil
 }

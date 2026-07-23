@@ -1,3 +1,5 @@
+//go:build integration
+
 package storia_takeshobo
 
 import (

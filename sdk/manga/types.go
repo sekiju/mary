@@ -12,6 +12,14 @@ type (
 		GenerateCookie() (string, error)
 	}
 
+	// ChapterListingFeature is implemented by extractors that can list all
+	// chapters of a manga via FindChapters. Extractors that only support
+	// resolving a single chapter URL (FindChapter) should not implement it,
+	// so callers can check via a type assertion before invoking FindChapters.
+	ChapterListingFeature interface {
+		SupportsChapterListing() bool
+	}
+
 	Settings struct {
 		Cookie *string
 	}

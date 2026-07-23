@@ -1,3 +1,5 @@
+//go:build integration
+
 package comic_walker
 
 import (
@@ -41,7 +43,7 @@ func Test(t *testing.T) {
 			pages, err := ext.FindChapterPages(chapter)
 			assert.NoError(t, err)
 			assert.NotEmpty(t, pages)
-			util.AssertImage(t, "https://stg.yandere.ovh/test_providers/comic_walker__KC_005558_S%24KC_0055580000200011_E.webp", pages[0])
+			util.AssertImage(t, "testdata/comic_walker__KC_005558_S_KC_0055580000200011_E.golden", pages[0])
 		})
 	})
 }

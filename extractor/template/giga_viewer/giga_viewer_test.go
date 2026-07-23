@@ -1,3 +1,5 @@
+//go:build integration
+
 package giga_viewer
 
 import (
@@ -29,9 +31,13 @@ func TestProvider(t *testing.T) {
 
 		t.Run("ExtractEpisode", func(t *testing.T) {
 			pages, err := ext.FindChapterPages(chapter)
+			if err == manga.ErrPaidChapter {
+				t.Skip("test chapter is no longer free to read; needs a currently-free replacement URL")
+				return
+			}
 			assert.NoError(t, err)
 			assert.NotEmpty(t, pages)
-			util.AssertImage(t, "https://stg.yandere.ovh/test_providers/giga_viewer__sjp__episode%2417106371892806261346.jpg", pages[0])
+			util.AssertImage(t, "testdata/giga_viewer__sjp__episode_17106371892806261346.golden", pages[0])
 		})
 	})
 }
