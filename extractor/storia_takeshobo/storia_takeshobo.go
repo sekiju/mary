@@ -3,16 +3,19 @@ package storia_takeshobo
 import (
 	"bytes"
 	"context"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/sekiju/mdl/extractor/template/speed_binb"
-	"github.com/sekiju/mdl/extractor/util"
-	"github.com/sekiju/mdl/sdk/manga"
 	"regexp"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/sekiju/mdl/extractor/registry"
+	"github.com/sekiju/mdl/extractor/template/speed_binb"
+	"github.com/sekiju/mdl/sdk/manga"
+	"github.com/sekiju/mdl/sdk/manga/pluginutil"
+
 	"resty.dev/v3"
 )
 
 type Extractor struct {
-	util.Base
+	pluginutil.Base
 }
 
 func (e *Extractor) FindChapters(ctx context.Context, URL string) ([]*manga.Chapter, error) {
@@ -55,6 +58,10 @@ func (e *Extractor) FindChapterPages(ctx context.Context, chapter *manga.Chapter
 	return speed_binb.New().FindChapterPages(ctx, chapter)
 }
 
+func init() {
+	registry.Register("storia.takeshobo.co.jp", registry.WithSession(New))
+}
+
 func New() (manga.Extractor, error) {
-	return &Extractor{Base: util.Base{Settings: &manga.Settings{}}}, nil
+	return &Extractor{Base: pluginutil.Base{Settings: &manga.Settings{}}}, nil
 }

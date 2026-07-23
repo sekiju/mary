@@ -4,17 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	json "github.com/bytedance/sonic"
-	util "github.com/sekiju/mdl/extractor/util"
-	"github.com/sekiju/mdl/sdk/manga"
 	"net/url"
 	"regexp"
-	"resty.dev/v3"
 	"strconv"
+
+	json "github.com/bytedance/sonic"
+	"github.com/sekiju/mdl/extractor/registry"
+	util "github.com/sekiju/mdl/extractor/util"
+	"github.com/sekiju/mdl/sdk/manga"
+	"github.com/sekiju/mdl/sdk/manga/pluginutil"
+
+	"resty.dev/v3"
 )
 
 type Extractor struct {
-	util.Base
+	pluginutil.Base
 }
 
 const (
@@ -147,7 +151,7 @@ func (e *Extractor) FindChapterPages(ctx context.Context, chapter *manga.Chapter
 		}
 	}
 
-	return util.BuildPages(reader.Data.Magazine.StoryContents.PageImages.PageCount, ".jpeg", func(index int, filename string) (*manga.Page, error) {
+	return pluginutil.BuildPages(reader.Data.Magazine.StoryContents.PageImages.PageCount, ".jpeg", func(index int, filename string) (*manga.Page, error) {
 		return &manga.Page{
 			URL:      fmt.Sprintf("%s%d.jpg?%s&w=4000", reader.Data.Magazine.StoryContents.PageImages.PageImageBaseURL, index+1, reader.Data.Magazine.StoryContents.PageImages.PageImageSign),
 			Filename: filename,
@@ -185,6 +189,10 @@ func (e *Extractor) GenerateCookie() (string, error) {
 	return res.Header().Get("Set-Cookie"), nil
 }
 
+func init() {
+	registry.Register("ganma.jp", registry.WithSession(New))
+}
+
 func New() (manga.Extractor, error) {
-	return &Extractor{Base: util.Base{Settings: &manga.Settings{}}}, nil
+	return &Extractor{Base: pluginutil.Base{Settings: &manga.Settings{}}}, nil
 }

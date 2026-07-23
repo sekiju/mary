@@ -4,18 +4,21 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	json "github.com/bytedance/sonic"
-	"github.com/sekiju/mdl/extractor/util"
-	"github.com/sekiju/mdl/sdk/manga"
 	"regexp"
-	"resty.dev/v3"
 	"strconv"
+
+	json "github.com/bytedance/sonic"
+	"github.com/sekiju/mdl/extractor/registry"
+	"github.com/sekiju/mdl/sdk/manga"
+	"github.com/sekiju/mdl/sdk/manga/pluginutil"
+
+	"resty.dev/v3"
 )
 
 var httpClient = resty.New()
 
 type Extractor struct {
-	util.Base
+	pluginutil.Base
 }
 
 type searchFn func(episodeID string) ([]*manga.Chapter, error)
@@ -119,7 +122,7 @@ func (e *Extractor) FindChapterPages(ctx context.Context, chapter *manga.Chapter
 		return nil, err
 	}
 
-	return util.BuildPages(len(viewerResult.Manuscripts), ".webp", func(index int, filename string) (*manga.Page, error) {
+	return pluginutil.BuildPages(len(viewerResult.Manuscripts), ".webp", func(index int, filename string) (*manga.Page, error) {
 		page := viewerResult.Manuscripts[index]
 		return &manga.Page{
 			Index:    uint(index),
@@ -148,8 +151,12 @@ func (e *Extractor) FindChapterPages(ctx context.Context, chapter *manga.Chapter
 	})
 }
 
+func init() {
+	registry.Register("comic-walker.com", registry.WithSession(New))
+}
+
 func New() (manga.Extractor, error) {
-	return &Extractor{Base: util.Base{Settings: &manga.Settings{}}}, nil
+	return &Extractor{Base: pluginutil.Base{Settings: &manga.Settings{}}}, nil
 }
 
 var re = regexp.MustCompile("https://comic-walker.com/detail/(KC_[a-zA-Z0-9_]*)(/episodes/(KC_[a-zA-Z0-9_]*))?")

@@ -1,4 +1,4 @@
-package util
+package pluginutil
 
 import (
 	"github.com/sekiju/mdl/sdk/manga"

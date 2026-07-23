@@ -2,16 +2,20 @@ package giga_viewer
 
 import (
 	"context"
+	"strconv"
+
+	"github.com/sekiju/mdl/extractor/registry"
 	"github.com/sekiju/mdl/extractor/util"
 	"github.com/sekiju/mdl/sdk/manga"
+	"github.com/sekiju/mdl/sdk/manga/pluginutil"
+
 	"resty.dev/v3"
-	"strconv"
 )
 
 var httpClient = resty.New()
 
 type Extractor struct {
-	util.Base
+	pluginutil.Base
 }
 
 type searchFn func(URL string) ([]*manga.Chapter, error)
@@ -134,7 +138,7 @@ func (e *Extractor) FindChapterPages(ctx context.Context, chapter *manga.Chapter
 		mainPages = append(mainPages, &page)
 	}
 
-	return util.BuildPages(len(mainPages), ".jpg", func(index int, filename string) (*manga.Page, error) {
+	return pluginutil.BuildPages(len(mainPages), ".jpg", func(index int, filename string) (*manga.Page, error) {
 		return &manga.Page{
 			Index:    uint(index),
 			URL:      mainPages[index].Src,
@@ -143,6 +147,29 @@ func (e *Extractor) FindChapterPages(ctx context.Context, chapter *manga.Chapter
 	})
 }
 
+func init() {
+	for _, host := range []string{
+		"comic-action.com",
+		"comic-days.com",
+		"comic-earthstar.com",
+		"comic-gardo.com",
+		"comic-growl.com",
+		"comic-ogyaaa.com",
+		"comic-trail.com",
+		"comic-zenon.com",
+		"comicborder.com",
+		"kuragebunch.com",
+		"magcomi.com",
+		"pocket.shonenmagazine.com",
+		"shonenjumpplus.com",
+		"tonarinoyj.jp",
+		"viewer.heros-web.com",
+		"www.sunday-webry.com",
+	} {
+		registry.Register(host, registry.WithSession(New))
+	}
+}
+
 func New() (manga.Extractor, error) {
-	return &Extractor{Base: util.Base{Settings: &manga.Settings{}}}, nil
+	return &Extractor{Base: pluginutil.Base{Settings: &manga.Settings{}}}, nil
 }

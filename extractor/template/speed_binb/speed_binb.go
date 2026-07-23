@@ -7,8 +7,8 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	json "github.com/bytedance/sonic"
 	"github.com/rs/zerolog/log"
-	"github.com/sekiju/mdl/extractor/util"
 	"github.com/sekiju/mdl/sdk/manga"
+	"github.com/sekiju/mdl/sdk/manga/pluginutil"
 	"image"
 	"image/draw"
 	_ "image/jpeg"
@@ -62,7 +62,7 @@ func (e *Extractor) v016061(ctx context.Context, parsedURL *url.URL, content *go
 	})
 
 	if len(tPages) > 0 {
-		return util.BuildPages(len(tPages), ".png", func(i int, filename string) (*manga.Page, error) {
+		return pluginutil.BuildPages(len(tPages), ".png", func(i int, filename string) (*manga.Page, error) {
 			src := tPages[i]
 			res, err := resty.New().R().SetContext(ctx).Get(parsedURL.String() + "/" + src)
 			if err != nil {
@@ -206,7 +206,7 @@ func (e *Extractor) v016452(ctx context.Context, parsedURL *url.URL, apiURL stri
 
 	tImages := tDoc.Find("t-case:first-of-type t-img")
 
-	return util.BuildPages(tImages.Length(), ".png", func(i int, filename string) (*manga.Page, error) {
+	return pluginutil.BuildPages(tImages.Length(), ".png", func(i int, filename string) (*manga.Page, error) {
 		src, _ := tImages.Eq(i).Attr("src")
 
 		query = sbcGetImgUrl.Query()

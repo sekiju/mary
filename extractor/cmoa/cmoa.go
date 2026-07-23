@@ -2,15 +2,18 @@ package cmoa
 
 import (
 	"context"
+
+	"github.com/sekiju/mdl/extractor/registry"
 	"github.com/sekiju/mdl/extractor/template/speed_binb"
-	"github.com/sekiju/mdl/extractor/util"
 	"github.com/sekiju/mdl/sdk/manga"
+	"github.com/sekiju/mdl/sdk/manga/pluginutil"
 	"regexp"
+
 	"resty.dev/v3"
 )
 
 type Extractor struct {
-	util.Base
+	pluginutil.Base
 }
 
 func (e *Extractor) FindChapters(ctx context.Context, URL string) ([]*manga.Chapter, error) {
@@ -58,6 +61,10 @@ func extractViewerID(URL string) (string, error) {
 	return matches[1], nil
 }
 
+func init() {
+	registry.Register("www.cmoa.jp", registry.WithSession(New))
+}
+
 func New() (manga.Extractor, error) {
-	return &Extractor{Base: util.Base{Settings: &manga.Settings{}}}, nil
+	return &Extractor{Base: pluginutil.Base{Settings: &manga.Settings{}}}, nil
 }
