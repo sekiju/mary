@@ -3,9 +3,13 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 func DefaultConfigDir() (string, error) {
+	if runtime.GOOS == "windows" {
+		return filepath.Join(os.Getenv("USERPROFILE"), ".config", "mdl"), nil
+	}
 	dir, err := os.UserConfigDir()
 	if err != nil {
 		return "", err
