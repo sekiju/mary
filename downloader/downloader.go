@@ -1,6 +1,7 @@
 package downloader
 
 import (
+	"context"
 	"fmt"
 	"github.com/rs/zerolog/log"
 	"github.com/sekiju/mdl/config"
@@ -27,24 +28,24 @@ func (d *Downloader) Stop() {
 	d.wg.Wait()
 }
 
-func (d *Downloader) downloadImages(qi *queueInfo) error {
-	destination := filepath.Join(config.Params.Output.Directory, qi.ChapterID)
+func (d *Downloader) downloadImages(ctx context.Context, qi *queueInfo) error {
+	destination := filepath.Join(config.Params.File.Output.Directory, qi.ChapterID)
 
-	if _, err := os.Stat(destination); err == nil && config.Params.Output.CleanOnStart {
+	if _, err := os.Stat(destination); err == nil && config.Params.File.Output.CleanOnStart {
 		if err = os.RemoveAll(destination); err != nil {
 			return err
 		}
 	}
 
 	if err := os.MkdirAll(destination, os.ModePerm); err != nil {
-		log.Error().Err(err).Msgf("Failed to create download directory for chapter %s", qi.ChapterID)
+		d.reporter.ChapterError(qi.URL, qi.ChapterID, "Failed to create download directory", err)
 		return err
 	}
 
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	var failedPages int
-	semaphore := make(chan struct{}, config.Params.Application.MaxParallelDownloads)
+	semaphore := make(chan struct{}, config.Params.File.Application.MaxParallelDownloads)
 
 	for _, page := range qi.Pages {
 		semaphore <- struct{}{}
@@ -55,8 +56,13 @@ func (d *Downloader) downloadImages(qi *queueInfo) error {
 				wg.Done()
 			}()
 
-			if err := d.downloadPage(destination, page); err != nil {
-				log.Error().Err(err).Msgf("Failed to download page #%d", page.Index)
+			if ctx.Err() != nil {
+				return
+			}
+
+			err := d.downloadPage(ctx, destination, page)
+			d.reporter.PageDownloaded(qi.ChapterID, page.Index, len(qi.Pages), err)
+			if err != nil {
 				mu.Lock()
 				failedPages++
 				mu.Unlock()
@@ -67,6 +73,13 @@ func (d *Downloader) downloadImages(qi *queueInfo) error {
 
 	wg.Wait()
 
+	if ctx.Err() != nil {
+		if err := os.RemoveAll(destination); err != nil {
+			d.reporter.ChapterError(qi.URL, qi.ChapterID, "Failed to clean up partial download", err)
+		}
+		return ctx.Err()
+	}
+
 	if failedPages > 0 {
 		return fmt.Errorf("failed to download %d of %d page(s)", failedPages, len(qi.Pages))
 	}
@@ -74,8 +87,15 @@ func (d *Downloader) downloadImages(qi *queueInfo) error {
 	return nil
 }
 
+func chapterConcurrency() int {
+	if n := config.Params.File.Application.MaxParallelChapters; n > 0 {
+		return n
+	}
+	return 1
+}
+
 func (d *Downloader) run() {
-	semaphore := make(chan struct{}, 1)
+	semaphore := make(chan struct{}, chapterConcurrency())
 
 	for qi := range d.ch {
 		semaphore <- struct{}{}
@@ -85,53 +105,53 @@ func (d *Downloader) run() {
 				d.wg.Done()
 			}()
 
-			log.Info().Str("url", qi.URL).Msg("Downloading next chapter in queue")
+			d.reporter.ChapterStarted(qi.URL)
 			start := time.Now()
 
 			parsedURL, err := url.Parse(qi.URL)
 			if err != nil {
-				log.Error().Str("url", qi.URL).Err(err).Msg("Invalid chapter URL")
+				d.reporter.ChapterError(qi.URL, "", "Invalid chapter URL", err)
 				return
 			}
 
 			ext, err := extractor.NewExtractor(parsedURL.Hostname())
 			if err != nil {
-				log.Error().Err(err).Str("url", qi.URL).Send()
+				d.reporter.ChapterError(qi.URL, "", "Unsupported website", err)
 				return
 			}
 
-			chapter, err := ext.FindChapter(qi.URL)
+			chapter, err := ext.FindChapter(d.ctx, qi.URL)
 			if err != nil {
-				log.Error().Str("url", qi.URL).Err(err).Msg("Failed to find chapter")
+				d.reporter.ChapterError(qi.URL, "", "Failed to find chapter", err)
 				return
 			}
 
 			qi.ChapterID = chapter.ID
 
-			pages, err := ext.FindChapterPages(chapter)
+			pages, err := ext.FindChapterPages(d.ctx, chapter)
 			if err != nil {
-				log.Error().Str("chapterId", chapter.ID).Err(err).Msg("Failed to find chapter pages")
+				d.reporter.ChapterError(qi.URL, chapter.ID, "Failed to find chapter pages", err)
 				return
 			}
 
 			qi.Pages = pages
 
-			if err = d.downloadImages(qi); err != nil {
-				log.Error().Str("chapterId", qi.ChapterID).Err(err).Msg("Failed to download chapter")
+			if err = d.downloadImages(d.ctx, qi); err != nil {
+				d.reporter.ChapterError(qi.URL, qi.ChapterID, "Failed to download chapter", err)
 				return
 			}
 
-			log.Info().Str("chapterId", qi.ChapterID).Str("duration", time.Since(start).String()).Msg("Download complete")
+			d.reporter.ChapterDone(qi.ChapterID, time.Since(start))
 
 		}(qi)
 	}
 }
 
-func NewDownloader() *Downloader {
+func NewDownloader(ctx context.Context, reporter ...ProgressReporter) *Downloader {
 	var downloadFunc downloadPageFunc
-	if config.Params.Output.FileFormat == config.AutoOutputFormat {
-		downloadFunc = func(dir string, page *manga.Page) error {
-			r, err := getReader(page)
+	if config.Params.File.Output.FileFormat == config.AutoOutputFormat {
+		downloadFunc = func(ctx context.Context, dir string, page *manga.Page) error {
+			r, err := getReader(ctx, page)
 			if err != nil {
 				return err
 			}
@@ -139,17 +159,22 @@ func NewDownloader() *Downloader {
 			return saveFile(dir, page.Filename, r)
 		}
 	} else {
-		downloadFunc = func(dir string, page *manga.Page) error {
-			r, err := getReader(page)
+		downloadFunc = func(ctx context.Context, dir string, page *manga.Page) error {
+			r, err := getReader(ctx, page)
 			if err != nil {
 				return err
 			}
 
-			return saveEncodedImage(dir, page.Filename, config.Params.Output.FileFormat, r)
+			return saveEncodedImage(dir, page.Filename, config.Params.File.Output.FileFormat, r)
 		}
 	}
 
-	d := &Downloader{ch: make(chan *queueInfo), downloadPage: downloadFunc}
+	var r ProgressReporter = defaultProgressReporter{}
+	if len(reporter) > 0 && reporter[0] != nil {
+		r = reporter[0]
+	}
+
+	d := &Downloader{ctx: ctx, ch: make(chan *queueInfo), downloadPage: downloadFunc, reporter: r}
 
 	go d.run()
 

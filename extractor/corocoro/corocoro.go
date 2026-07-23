@@ -1,13 +1,13 @@
 package corocoro
 
 import (
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/hex"
 	"fmt"
 	json "github.com/bytedance/sonic"
 	"github.com/sekiju/mdl/extractor/util"
-	"github.com/sekiju/mdl/internal/renamer"
 	"github.com/sekiju/mdl/sdk/manga"
 	"regexp"
 	"resty.dev/v3"
@@ -15,10 +15,10 @@ import (
 )
 
 type Extractor struct {
-	settings *manga.Settings
+	util.Base
 }
 
-func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
+func (e *Extractor) FindChapters(ctx context.Context, URL string) ([]*manga.Chapter, error) {
 	return nil, manga.ErrChapterListingUnsupported
 }
 
@@ -28,16 +28,14 @@ func (e *Extractor) SupportsChapterListing() bool {
 
 var re = regexp.MustCompile(`https://www.corocoro.jp/chapter/(\d*)/viewer`)
 
-func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
+func (e *Extractor) FindChapter(ctx context.Context, URL string) (*manga.Chapter, error) {
 	matches := re.FindStringSubmatch(URL)
 	if len(matches) != 2 {
 		return nil, manga.ErrInvalidChapterURL
 	}
 
-	req := resty.New().R()
-	if e.settings.Cookie != nil {
-		req.SetHeader("Cookie", *e.settings.Cookie)
-	}
+	req := resty.New().R().SetContext(ctx)
+	e.ApplyCookie(req)
 
 	res, err := req.Get(URL)
 	if err != nil {
@@ -61,11 +59,9 @@ func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
 	}, nil
 }
 
-func (e *Extractor) FindChapterPages(chapter *manga.Chapter) ([]*manga.Page, error) {
-	req := resty.New().R()
-	if e.settings.Cookie != nil {
-		req.SetHeader("Cookie", *e.settings.Cookie)
-	}
+func (e *Extractor) FindChapterPages(ctx context.Context, chapter *manga.Chapter) ([]*manga.Page, error) {
+	req := resty.New().R().SetContext(ctx)
+	e.ApplyCookie(req)
 
 	res, err := req.Get(chapter.URL)
 	if err != nil {
@@ -86,23 +82,21 @@ func (e *Extractor) FindChapterPages(chapter *manga.Chapter) ([]*manga.Page, err
 		return nil, err
 	}
 
-	pages := make([]*manga.Page, len(result))
-	padRenamer := renamer.New(len(result))
-
-	for index, page := range result {
-		pages[index] = &manga.Page{
+	return util.BuildPages(len(result), ".webp", func(index int, filename string) (*manga.Page, error) {
+		page := result[index]
+		return &manga.Page{
 			Index:    uint(index),
 			URL:      page.Src,
-			Filename: padRenamer.Name(index, ".webp"),
+			Filename: filename,
 			Decode: func(b []byte) ([]byte, error) {
 				key, err := hex.DecodeString(page.Crypto.Key)
 				if err != nil {
-					return nil, fmt.Errorf("invalid key hex: %w", err)
+					return nil, fmt.Errorf("invalid key hex: %w: %w", err, manga.ErrMalformedChapterData)
 				}
 
 				iv, err := hex.DecodeString(page.Crypto.Iv)
 				if err != nil {
-					return nil, fmt.Errorf("invalid IV hex: %w", err)
+					return nil, fmt.Errorf("invalid IV hex: %w: %w", err, manga.ErrMalformedChapterData)
 				}
 
 				block, err := aes.NewCipher(key)
@@ -115,16 +109,10 @@ func (e *Extractor) FindChapterPages(chapter *manga.Chapter) ([]*manga.Page, err
 
 				return b[:(len(b) - int(b[len(b)-1]))], nil
 			},
-		}
-	}
-
-	return pages, nil
-}
-
-func (e *Extractor) SetSettings(settings manga.Settings) {
-	e.settings = &settings
+		}, nil
+	})
 }
 
 func New() (manga.Extractor, error) {
-	return &Extractor{settings: &manga.Settings{}}, nil
+	return &Extractor{Base: util.Base{Settings: &manga.Settings{}}}, nil
 }

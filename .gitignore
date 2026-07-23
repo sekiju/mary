@@ -13,3 +13,6 @@ temporary/
 dist/
 whats-new.md
 generate-release-notes
+
+# Agents
+.claude/

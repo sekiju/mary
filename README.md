@@ -74,3 +74,52 @@ or with CLI option example:
 ```shell
 mdl --cookie glsc=1hYa4GrNp2DndSNIShVyoDGP6MgDmaJhiX22C0X734hkzod56wsBN7Fy1S5ZBOQd https://comic-ogyaaa.com/episode/4856001361561258284
 ```
+
+## Development
+
+### Build, vet, test
+
+```shell
+go build ./...
+go vet ./...
+go test ./...                    # unit tests only, no network required
+go test -tags=integration ./...  # also exercises live-site extractor paths, requires network
+```
+
+### Lint
+
+```shell
+golangci-lint run
+```
+
+Configuration lives in [.golangci.yaml](.golangci.yaml).
+
+### Architecture overview
+
+- **`extractor/`** — one package per supported site, each implementing the
+  `sdk/manga.Extractor` interface (`FindChapters`, `FindChapter`,
+  `FindChapterPages`, `SetSettings`). `extractor/extractor.go` holds a
+  `domainRegistry map[string]Factory` mapping exact hostnames to extractor
+  constructors (`getSession` does exact-match lookup, no subdomain
+  fallback). Extractors that share a page format (e.g. Speed Binb) embed a
+  common `extractor/template/*` package; all extractors embed a shared
+  `base`/`util.Base` for `settings`/`SetSettings` and cookie-header
+  injection boilerplate.
+- **`downloader/`** — `Downloader.Queue` pushes work onto a channel
+  consumed by `run()`, which resolves the extractor, finds chapter pages,
+  and fans out page downloads under a `MaxParallelDownloads`-bounded
+  semaphore; chapter-level concurrency is bounded separately by
+  `MaxParallelChapters` (both configured under `application` in
+  `config.hcl`, default sequential when unset). A `context.Context` is
+  threaded through the whole path so `Ctrl+C` cancels in-flight downloads
+  and cleans up partially-written chapter directories.
+- **`config/`** — `config.Params` is a package-level singleton split into
+  `FileConfig` (everything unmarshaled from `config.hcl` via `koanf`:
+  `Application`, `Output`, `Sites`) and `RuntimeFlags` (CLI-only state such
+  as `PrimaryCookie`/`ListChaptersMode`/`DownloadChapters`, populated by
+  `cmd/cli/main.go` flag parsing, never touched by `koanf.Unmarshal`).
+- **`sdk/manga/`** — the extractor-facing public types/interfaces
+  (`Extractor`, `Chapter`, `Page`, `Settings`) and the `Err*` sentinel error
+  vocabulary extractors are expected to return for recognizable domain
+  conditions (not-found, paid, unsupported, credentials-required, etc.)
+  instead of ad hoc errors or panics.

@@ -1,10 +1,12 @@
 package manga
 
+import "context"
+
 type (
 	Extractor interface {
-		FindChapters(URL string) ([]*Chapter, error)
-		FindChapter(URL string) (*Chapter, error)
-		FindChapterPages(chapter *Chapter) ([]*Page, error)
+		FindChapters(ctx context.Context, URL string) ([]*Chapter, error)
+		FindChapter(ctx context.Context, URL string) (*Chapter, error)
+		FindChapterPages(ctx context.Context, chapter *Chapter) ([]*Page, error)
 		SetSettings(settings Settings)
 	}
 
@@ -40,6 +42,6 @@ type (
 		Filename string            `json:"filename"`
 		Index    uint              `json:"index"`
 		Headers  map[string]string `json:"headers"`
-		Decode   DecodeFunc
+		Decode   DecodeFunc        `json:"-"` // function value, not serializable
 	}
 )

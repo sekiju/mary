@@ -1,17 +1,19 @@
 package cmoa
 
 import (
+	"context"
 	"github.com/sekiju/mdl/extractor/template/speed_binb"
+	"github.com/sekiju/mdl/extractor/util"
 	"github.com/sekiju/mdl/sdk/manga"
 	"regexp"
 	"resty.dev/v3"
 )
 
 type Extractor struct {
-	settings *manga.Settings
+	util.Base
 }
 
-func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
+func (e *Extractor) FindChapters(ctx context.Context, URL string) ([]*manga.Chapter, error) {
 	return nil, manga.ErrChapterListingUnsupported
 }
 
@@ -19,7 +21,7 @@ func (e *Extractor) SupportsChapterListing() bool {
 	return false
 }
 
-func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
+func (e *Extractor) FindChapter(ctx context.Context, URL string) (*manga.Chapter, error) {
 	ID, err := extractViewerID(URL)
 	if err != nil {
 		return nil, err
@@ -35,17 +37,14 @@ func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
 	}, nil
 }
 
-func (e *Extractor) FindChapterPages(chapter *manga.Chapter) ([]*manga.Page, error) {
-	if e.settings.Cookie == nil {
+func (e *Extractor) FindChapterPages(ctx context.Context, chapter *manga.Chapter) ([]*manga.Page, error) {
+	if e.Settings.Cookie == nil {
 		return nil, manga.ErrCredentialsRequired
 	}
 
-	req := resty.New().R().SetHeader("Cookie", *e.settings.Cookie)
-	return speed_binb.New(req).FindChapterPages(chapter)
-}
-
-func (e *Extractor) SetSettings(settings manga.Settings) {
-	e.settings = &settings
+	req := resty.New().R().SetContext(ctx)
+	e.ApplyCookie(req)
+	return speed_binb.New(req).FindChapterPages(ctx, chapter)
 }
 
 var re = regexp.MustCompile(`https://www.cmoa.jp/bib/speedreader/[?&]cid=([^&]+)`)
@@ -60,5 +59,5 @@ func extractViewerID(URL string) (string, error) {
 }
 
 func New() (manga.Extractor, error) {
-	return &Extractor{settings: &manga.Settings{}}, nil
+	return &Extractor{Base: util.Base{Settings: &manga.Settings{}}}, nil
 }

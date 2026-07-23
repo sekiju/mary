@@ -2,6 +2,7 @@ package downloader
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/gen2brain/avif"
 	"github.com/gen2brain/webp"
@@ -18,8 +19,8 @@ import (
 
 var httpClient = resty.New()
 
-func getReader(page *manga.Page) (io.Reader, error) {
-	res, err := httpClient.R().SetHeaders(page.Headers).Get(page.URL)
+func getReader(ctx context.Context, page *manga.Page) (io.Reader, error) {
+	res, err := httpClient.R().SetContext(ctx).SetHeaders(page.Headers).Get(page.URL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download page: %w", err)
 	}

@@ -16,31 +16,30 @@ import (
 type Factory func(cookie *string) (manga.Extractor, error)
 
 var domainRegistry = map[string]Factory{
-	"comic-walker.com":          fz(comic_walker.New),
-	"shonenjumpplus.com":        fz(giga_viewer.New),
-	"comic-zenon.com":           fz(giga_viewer.New),
-	"pocket.shonenmagazine.com": fz(giga_viewer.New),
-	"comic-gardo.com":           fz(giga_viewer.New),
-	"magcomi.com":               fz(giga_viewer.New),
-	"tonarinoyj.jp":             fz(giga_viewer.New),
-	"comic-ogyaaa.com":          fz(giga_viewer.New),
-	"comic-action.com":          fz(giga_viewer.New),
-	"comic-days.com":            fz(giga_viewer.New),
-	"comic-growl.com":           fz(giga_viewer.New),
-	"comic-earthstar.com":       fz(giga_viewer.New),
-	"comicborder.com":           fz(giga_viewer.New),
-	"comic-trail.com":           fz(giga_viewer.New),
-	"kuragebunch.com":           fz(giga_viewer.New),
-	"viewer.heros-web.com":      fz(giga_viewer.New),
-	"www.sunday-webry.com":      fz(giga_viewer.New),
-	"www.cmoa.jp":               fz(cmoa.New),
-	"www.corocoro.jp":           fz(corocoro.New),
-	"storia.takeshobo.co.jp":    fz(storia_takeshobo.New),
-	"ganma.jp":                  fz(ganma.New),
+	"comic-walker.com":          withSession(comic_walker.New),
+	"shonenjumpplus.com":        withSession(giga_viewer.New),
+	"comic-zenon.com":           withSession(giga_viewer.New),
+	"pocket.shonenmagazine.com": withSession(giga_viewer.New),
+	"comic-gardo.com":           withSession(giga_viewer.New),
+	"magcomi.com":               withSession(giga_viewer.New),
+	"tonarinoyj.jp":             withSession(giga_viewer.New),
+	"comic-ogyaaa.com":          withSession(giga_viewer.New),
+	"comic-action.com":          withSession(giga_viewer.New),
+	"comic-days.com":            withSession(giga_viewer.New),
+	"comic-growl.com":           withSession(giga_viewer.New),
+	"comic-earthstar.com":       withSession(giga_viewer.New),
+	"comicborder.com":           withSession(giga_viewer.New),
+	"comic-trail.com":           withSession(giga_viewer.New),
+	"kuragebunch.com":           withSession(giga_viewer.New),
+	"viewer.heros-web.com":      withSession(giga_viewer.New),
+	"www.sunday-webry.com":      withSession(giga_viewer.New),
+	"www.cmoa.jp":               withSession(cmoa.New),
+	"www.corocoro.jp":           withSession(corocoro.New),
+	"storia.takeshobo.co.jp":    withSession(storia_takeshobo.New),
+	"ganma.jp":                  withSession(ganma.New),
 }
 
-// fz is a generic helper function to create a Factory for manga.Extractor
-func fz[T func() (manga.Extractor, error)](fn T) Factory {
+func withSession(fn func() (manga.Extractor, error)) Factory {
 	return func(cookie *string) (manga.Extractor, error) {
 		ext, err := fn()
 		if err != nil {
@@ -67,11 +66,15 @@ func fz[T func() (manga.Extractor, error)](fn T) Factory {
 	}
 }
 
+// getSession matches hostname exactly against config.Params.File.Sites, with
+// no subdomain/suffix fallback. A site served from a variable subdomain will
+// silently fall through to "unsupported website" in NewExtractor unless this
+// is revisited.
 func getSession(hostname string) *string {
-	if config.Params.PrimaryCookie != nil {
-		return config.Params.PrimaryCookie
+	if config.Params.Runtime.PrimaryCookie != nil {
+		return config.Params.Runtime.PrimaryCookie
 	}
-	if site, exists := config.Params.Sites[hostname]; exists && site.Cookie != nil {
+	if site, exists := config.Params.File.Sites[hostname]; exists && site.Cookie != nil {
 		return site.Cookie
 	}
 	return nil

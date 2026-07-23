@@ -2,18 +2,20 @@ package storia_takeshobo
 
 import (
 	"bytes"
+	"context"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/sekiju/mdl/extractor/template/speed_binb"
+	"github.com/sekiju/mdl/extractor/util"
 	"github.com/sekiju/mdl/sdk/manga"
 	"regexp"
 	"resty.dev/v3"
 )
 
 type Extractor struct {
-	settings *manga.Settings
+	util.Base
 }
 
-func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
+func (e *Extractor) FindChapters(ctx context.Context, URL string) ([]*manga.Chapter, error) {
 	return nil, manga.ErrChapterListingUnsupported
 }
 
@@ -23,13 +25,13 @@ func (e *Extractor) SupportsChapterListing() bool {
 
 var re = regexp.MustCompile(`https://storia.takeshobo.co.jp/_files/([a-zA-Z0-9_]*)/(\d*)`)
 
-func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
+func (e *Extractor) FindChapter(ctx context.Context, URL string) (*manga.Chapter, error) {
 	matches := re.FindStringSubmatch(URL)
 	if len(matches) != 3 {
 		return nil, manga.ErrInvalidURLFormat
 	}
 
-	res, err := resty.New().R().Get(URL)
+	res, err := resty.New().R().SetContext(ctx).Get(URL)
 	if err != nil {
 		return nil, err
 	}
@@ -49,14 +51,10 @@ func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
 	}, nil
 }
 
-func (e *Extractor) FindChapterPages(chapter *manga.Chapter) ([]*manga.Page, error) {
-	return speed_binb.New().FindChapterPages(chapter)
-}
-
-func (e *Extractor) SetSettings(settings manga.Settings) {
-	e.settings = &settings
+func (e *Extractor) FindChapterPages(ctx context.Context, chapter *manga.Chapter) ([]*manga.Page, error) {
+	return speed_binb.New().FindChapterPages(ctx, chapter)
 }
 
 func New() (manga.Extractor, error) {
-	return &Extractor{settings: &manga.Settings{}}, nil
+	return &Extractor{Base: util.Base{Settings: &manga.Settings{}}}, nil
 }

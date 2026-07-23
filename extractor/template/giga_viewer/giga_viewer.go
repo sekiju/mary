@@ -1,8 +1,8 @@
 package giga_viewer
 
 import (
+	"context"
 	"github.com/sekiju/mdl/extractor/util"
-	"github.com/sekiju/mdl/internal/renamer"
 	"github.com/sekiju/mdl/sdk/manga"
 	"resty.dev/v3"
 	"strconv"
@@ -11,12 +11,12 @@ import (
 var httpClient = resty.New()
 
 type Extractor struct {
-	settings *manga.Settings
+	util.Base
 }
 
 type searchFn func(URL string) ([]*manga.Chapter, error)
 
-func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
+func (e *Extractor) FindChapters(ctx context.Context, URL string) ([]*manga.Chapter, error) {
 	chapters := make([]*manga.Chapter, 0)
 	visitedIDs := make(map[string]bool)
 
@@ -28,7 +28,7 @@ func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
 
 		visitedIDs[episodeURL] = true
 
-		res, err := httpClient.R().Get(episodeURL)
+		res, err := httpClient.R().SetContext(ctx).Get(episodeURL)
 		if err != nil {
 			return nil, err
 		}
@@ -73,8 +73,8 @@ func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
 	return fn(URL)
 }
 
-func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
-	res, err := httpClient.R().Get(URL)
+func (e *Extractor) FindChapter(ctx context.Context, URL string) (*manga.Chapter, error) {
+	res, err := httpClient.R().SetContext(ctx).Get(URL)
 	if err != nil {
 		return nil, err
 	}
@@ -100,11 +100,9 @@ func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
 	}, nil
 }
 
-func (e *Extractor) FindChapterPages(chapter *manga.Chapter) ([]*manga.Page, error) {
-	req := httpClient.R().SetHeader("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1")
-	if e.settings.Cookie != nil {
-		req.SetHeader("Cookie", *e.settings.Cookie)
-	}
+func (e *Extractor) FindChapterPages(ctx context.Context, chapter *manga.Chapter) ([]*manga.Page, error) {
+	req := httpClient.R().SetContext(ctx).SetHeader("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1")
+	e.ApplyCookie(req)
 
 	res, err := req.Get(chapter.URL)
 
@@ -136,24 +134,15 @@ func (e *Extractor) FindChapterPages(chapter *manga.Chapter) ([]*manga.Page, err
 		mainPages = append(mainPages, &page)
 	}
 
-	chapterPages := make([]*manga.Page, len(mainPages))
-	padRenamer := renamer.New(len(mainPages))
-
-	for index, page := range mainPages {
-		chapterPages[index] = &manga.Page{
+	return util.BuildPages(len(mainPages), ".jpg", func(index int, filename string) (*manga.Page, error) {
+		return &manga.Page{
 			Index:    uint(index),
-			URL:      page.Src,
-			Filename: padRenamer.Name(index, ".jpg"),
-		}
-	}
-
-	return chapterPages, nil
-}
-
-func (e *Extractor) SetSettings(settings manga.Settings) {
-	e.settings = &settings
+			URL:      mainPages[index].Src,
+			Filename: filename,
+		}, nil
+	})
 }
 
 func New() (manga.Extractor, error) {
-	return &Extractor{settings: &manga.Settings{}}, nil
+	return &Extractor{Base: util.Base{Settings: &manga.Settings{}}}, nil
 }

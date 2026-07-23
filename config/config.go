@@ -10,14 +10,16 @@ import (
 )
 
 var Params = config{
-	Application: application{
-		CheckUpdates:         true,
-		MaxParallelDownloads: 4,
-	},
-	Output: output{
-		Directory:    "downloads",
-		CleanOnStart: false,
-		FileFormat:   AutoOutputFormat,
+	File: FileConfig{
+		Application: application{
+			CheckUpdates:         true,
+			MaxParallelDownloads: 4,
+		},
+		Output: output{
+			Directory:    "downloads",
+			CleanOnStart: false,
+			FileFormat:   AutoOutputFormat,
+		},
 	},
 }
 
@@ -35,7 +37,7 @@ func Load(filepath string) {
 		}
 	}
 
-	if err := k.Unmarshal("", &Params); err != nil {
+	if err := k.Unmarshal("", &Params.File); err != nil {
 		log.Fatal().Err(err).Send()
 	}
 }

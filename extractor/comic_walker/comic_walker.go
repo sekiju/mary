@@ -1,10 +1,11 @@
 package comic_walker
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	json "github.com/bytedance/sonic"
-	"github.com/sekiju/mdl/internal/renamer"
+	"github.com/sekiju/mdl/extractor/util"
 	"github.com/sekiju/mdl/sdk/manga"
 	"regexp"
 	"resty.dev/v3"
@@ -14,18 +15,29 @@ import (
 var httpClient = resty.New()
 
 type Extractor struct {
-	settings *manga.Settings
+	util.Base
 }
 
 type searchFn func(episodeID string) ([]*manga.Chapter, error)
 
-func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
+func toChapter(id, code, title string, episodeNo int, workCode string) manga.Chapter {
+	return manga.Chapter{
+		ID:      id,
+		Number:  strconv.Itoa(episodeNo),
+		Title:   title,
+		Index:   uint(episodeNo - 1),
+		URL:     fmt.Sprintf("https://comic-walker.com/detail/%s/episodes/%s", workCode, code),
+		MangaID: workCode,
+	}
+}
+
+func (e *Extractor) FindChapters(ctx context.Context, URL string) ([]*manga.Chapter, error) {
 	parsedURL, err := parseURL(URL)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := httpClient.R().Get(fmt.Sprintf("https://comic-walker.com/api/contents/details/episode?workCode=%s&episodeType=first", parsedURL.WorkCode))
+	res, err := httpClient.R().SetContext(ctx).Get(fmt.Sprintf("https://comic-walker.com/api/contents/details/episode?workCode=%s&episodeType=first", parsedURL.WorkCode))
 	if err != nil {
 		return nil, err
 	}
@@ -39,20 +51,12 @@ func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
 		return nil, err
 	}
 
-	chapters := []*manga.Chapter{
-		{
-			ID:      episodeResult.Episode.Id,
-			Number:  strconv.Itoa(episodeResult.Episode.Internal.EpisodeNo),
-			Title:   episodeResult.Episode.Title,
-			Index:   uint(episodeResult.Episode.Internal.EpisodeNo - 1),
-			URL:     fmt.Sprintf("https://comic-walker.com/detail/%s/episodes/%s", parsedURL.WorkCode, episodeResult.Episode.Code),
-			MangaID: parsedURL.WorkCode,
-		},
-	}
+	firstChapter := toChapter(episodeResult.Episode.Id, episodeResult.Episode.Code, episodeResult.Episode.Title, episodeResult.Episode.Internal.EpisodeNo, parsedURL.WorkCode)
+	chapters := []*manga.Chapter{&firstChapter}
 
 	var fn searchFn
 	fn = func(episodeID string) ([]*manga.Chapter, error) {
-		res, err = httpClient.R().Get(fmt.Sprintf("https://comic-walker.com/api/contents/viewer-jump-forward?episodeId=%s", episodeID))
+		res, err = httpClient.R().SetContext(ctx).Get(fmt.Sprintf("https://comic-walker.com/api/contents/viewer-jump-forward?episodeId=%s", episodeID))
 		if err != nil {
 			return nil, err
 		}
@@ -63,14 +67,9 @@ func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
 		}
 
 		if viewerJumpForwardResult.Episode != nil {
-			chapters = append(chapters, &manga.Chapter{
-				ID:      viewerJumpForwardResult.Episode.Id,
-				Number:  strconv.Itoa(viewerJumpForwardResult.Episode.Internal.EpisodeNo),
-				Title:   viewerJumpForwardResult.Episode.Title,
-				Index:   uint(viewerJumpForwardResult.Episode.Internal.EpisodeNo - 1),
-				URL:     fmt.Sprintf("https://comic-walker.com/detail/%s/episodes/%s", parsedURL.WorkCode, viewerJumpForwardResult.Episode.Code),
-				MangaID: parsedURL.WorkCode,
-			})
+			ep := viewerJumpForwardResult.Episode
+			nextChapter := toChapter(ep.Id, ep.Code, ep.Title, ep.Internal.EpisodeNo, parsedURL.WorkCode)
+			chapters = append(chapters, &nextChapter)
 
 			return fn(viewerJumpForwardResult.Episode.Id)
 		}
@@ -81,13 +80,13 @@ func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
 	return fn(episodeResult.Episode.Id)
 }
 
-func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
+func (e *Extractor) FindChapter(ctx context.Context, URL string) (*manga.Chapter, error) {
 	parsedURL, err := parseURL(URL)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := httpClient.R().Get(fmt.Sprintf("https://comic-walker.com/api/contents/details/episode?workCode=%s&episodeCode=%s&episodeType=first", parsedURL.WorkCode, parsedURL.EpisodeCode))
+	res, err := httpClient.R().SetContext(ctx).Get(fmt.Sprintf("https://comic-walker.com/api/contents/details/episode?workCode=%s&episodeCode=%s&episodeType=first", parsedURL.WorkCode, parsedURL.EpisodeCode))
 	if err != nil {
 		return nil, err
 	}
@@ -101,18 +100,12 @@ func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
 		return nil, err
 	}
 
-	return &manga.Chapter{
-		ID:      episodeResult.Episode.Id,
-		Number:  strconv.Itoa(episodeResult.Episode.Internal.EpisodeNo),
-		Title:   episodeResult.Episode.Title,
-		Index:   uint(episodeResult.Episode.Internal.EpisodeNo - 1),
-		URL:     fmt.Sprintf("https://comic-walker.com/detail/%s/episodes/%s", parsedURL.WorkCode, episodeResult.Episode.Code),
-		MangaID: parsedURL.WorkCode,
-	}, nil
+	chapter := toChapter(episodeResult.Episode.Id, episodeResult.Episode.Code, episodeResult.Episode.Title, episodeResult.Episode.Internal.EpisodeNo, parsedURL.WorkCode)
+	return &chapter, nil
 }
 
-func (e *Extractor) FindChapterPages(chapter *manga.Chapter) ([]*manga.Page, error) {
-	res, err := httpClient.R().Get(fmt.Sprintf("https://comic-walker.com/api/contents/viewer?episodeId=%s&imageSizeType=width%%3A1284", chapter.ID))
+func (e *Extractor) FindChapterPages(ctx context.Context, chapter *manga.Chapter) ([]*manga.Page, error) {
+	res, err := httpClient.R().SetContext(ctx).Get(fmt.Sprintf("https://comic-walker.com/api/contents/viewer?episodeId=%s&imageSizeType=width%%3A1284", chapter.ID))
 	if err != nil {
 		return nil, err
 	}
@@ -126,15 +119,17 @@ func (e *Extractor) FindChapterPages(chapter *manga.Chapter) ([]*manga.Page, err
 		return nil, err
 	}
 
-	pages := make([]*manga.Page, len(viewerResult.Manuscripts))
-	padRenamer := renamer.New(len(viewerResult.Manuscripts))
-
-	for index, page := range viewerResult.Manuscripts {
-		pages[index] = &manga.Page{
+	return util.BuildPages(len(viewerResult.Manuscripts), ".webp", func(index int, filename string) (*manga.Page, error) {
+		page := viewerResult.Manuscripts[index]
+		return &manga.Page{
 			Index:    uint(index),
 			URL:      page.DrmImageUrl,
-			Filename: padRenamer.Name(index, ".webp"),
+			Filename: filename,
 			Decode: func(b []byte) ([]byte, error) {
+				if len(page.DrmHash) < 16 {
+					return nil, fmt.Errorf("comic_walker: drmHash too short: got %d chars, want at least 16: %w", len(page.DrmHash), manga.ErrMalformedChapterData)
+				}
+
 				keyBytes, err := hex.DecodeString(page.DrmHash[:16])
 				if err != nil {
 					return nil, err
@@ -149,18 +144,12 @@ func (e *Extractor) FindChapterPages(chapter *manga.Chapter) ([]*manga.Page, err
 
 				return decodedBytes, nil
 			},
-		}
-	}
-
-	return pages, nil
-}
-
-func (e *Extractor) SetSettings(settings manga.Settings) {
-	e.settings = &settings
+		}, nil
+	})
 }
 
 func New() (manga.Extractor, error) {
-	return &Extractor{settings: &manga.Settings{}}, nil
+	return &Extractor{Base: util.Base{Settings: &manga.Settings{}}}, nil
 }
 
 var re = regexp.MustCompile("https://comic-walker.com/detail/(KC_[a-zA-Z0-9_]*)(/episodes/(KC_[a-zA-Z0-9_]*))?")

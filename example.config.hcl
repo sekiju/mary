@@ -1,6 +1,7 @@
 application {
   check_updates = true
   max_parallel_downloads = 4
+  max_parallel_chapters = 1
 }
 
 output {

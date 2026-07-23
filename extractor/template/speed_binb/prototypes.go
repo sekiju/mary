@@ -19,15 +19,25 @@ type DescrambleTransfer struct {
 	Coords []DescrambleCord
 }
 
+// Piece is one scrambled tile: its grid position (x, y) and span (w, h) in
+// tile units, used by the SpeedbinbA prototype's tile-shuffle scheme.
 type Piece struct {
 	x, y, w, h int
 }
 
+// Yt is a decoded tile-shuffle layout for SpeedbinbA: grid dimensions
+// (ndx x ndy) plus the per-tile placement order.
 type Yt struct {
 	ndx, ndy int
 	piece    *[]Piece
 }
 
+// SpeedBinbDecoder is implemented by each descramble prototype variant
+// (SpeedbinbF, SpeedbinbA, SpeedbinbH). vt reports whether the prototype
+// parsed successfully; bt reports whether an image is large enough to be
+// scrambled under this prototype; dt returns the descrambled image's
+// bounds; gt returns the source->destination copy regions for
+// descrambleImage.
 type SpeedBinbDecoder interface {
 	vt() bool
 	bt(t image.Rectangle) bool
@@ -39,11 +49,18 @@ type DescrambleCord struct {
 	XSrc, YSrc, Width, Height, XDest, YDest int
 }
 
+// SpeedbinbF is the grid-descramble prototype variant identified by a
+// "=C-I(+|-)Jt-<data>" table entry: a C x I grid of tiles with Jt-pixel
+// gutters, permuted per Mt (built from the encoder/decoder tile orderings
+// Xt/Et and It/St).
 type SpeedbinbF struct {
 	C, I, Jt           int
 	Xt, Et, It, St, Mt []int
 }
 
+// Tt is a base64url-alphabet reverse lookup table (char code -> 0-63, or -1
+// if the char isn't in base64chars), used by SpeedbinbF.yt to decode the
+// packed tile-ordering data.
 var Tt = []int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, 63, -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1}
 
 func padStart(input string, length int, padChar string) string {
@@ -57,7 +74,9 @@ func padStart(input string, length int, padChar string) string {
 
 const base64chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 
-func tt(t string) string {
+// generateSharingKey derives the "k" query-param sharing key from the
+// content ID (t), mixing a hex timestamp with an XOR checksum of t.
+func generateSharingKey(t string) string {
 	timestampMilliseconds := time.Now().UnixNano() / int64(time.Millisecond)
 	n := strconv.FormatInt(timestampMilliseconds, 16)
 	nHex := padStart(n, 16, "x")
@@ -79,7 +98,10 @@ func tt(t string) string {
 	return result
 }
 
-func pt(t, i, n string) []string {
+// decodeTable XOR/rotation-decodes the ctbl/ptbl prototype table (n) using
+// the content ID (t) and sharing key (i) as a keystream seed, returning the
+// resulting JSON array of prototype descriptors.
+func decodeTable(t, i, n string) []string {
 	r := t + ":" + i
 	e := 0
 	for s := 0; s < len(r); s++ {
@@ -106,7 +128,9 @@ func pt(t, i, n string) []string {
 	return result
 }
 
-func lt(t string, ctbl, ptbl []string) SpeedBinbDecoder {
+// selectPrototype picks the SpeedBinbDecoder variant (F/A/H) matching the
+// image path t, indexing into ctbl/ptbl by a checksum of t's basename.
+func selectPrototype(t string, ctbl, ptbl []string) SpeedBinbDecoder {
 	i := [2]int{0, 0}
 
 	if t != "" {
@@ -165,16 +189,22 @@ func NewSpeedbinbF(t, i string) *SpeedbinbF {
 	return &sb
 }
 
+// vt reports whether the grid params parsed successfully (Mt is set).
 func (s *SpeedbinbF) vt() bool {
 	return s.Mt != nil
 }
 
+// bt reports whether image t is large enough to actually be grid-scrambled
+// (accounting for the C x I grid and Jt gutters); small images are served
+// unscrambled.
 func (s *SpeedbinbF) bt(t image.Rectangle) bool {
 	i := 2 * s.C * s.Jt
 	n := 2 * s.I * s.Jt
 	return t.Dx() >= 64+i && t.Dy() >= 64+n && t.Dx()*t.Dy() >= (320+i)*(320+n)
 }
 
+// dt returns the descrambled image bounds: t minus the grid gutters, or t
+// unchanged if bt reports the image isn't scrambled.
 func (s *SpeedbinbF) dt(t image.Rectangle) image.Rectangle {
 	if s.bt(t) {
 		return image.Rect(0, 0, t.Dx()-2*s.C*s.Jt, t.Dy()-2*s.I*s.Jt)
@@ -183,6 +213,8 @@ func (s *SpeedbinbF) dt(t image.Rectangle) image.Rectangle {
 	return t
 }
 
+// gt computes the per-tile source->destination copy regions that undo the
+// C x I grid permutation encoded in Mt.
 func (s *SpeedbinbF) gt(t image.Rectangle) []DescrambleCord {
 	if !s.vt() {
 		return nil
@@ -251,6 +283,8 @@ func (s *SpeedbinbF) gt(t image.Rectangle) []DescrambleCord {
 	return h
 }
 
+// yt decodes a packed tile-ordering string t (via the Tt lookup table) into
+// its "n" (encoder order), "t" (decoder order), and "p" (permutation) slices.
 func (s *SpeedbinbF) yt(t string) map[string][]int {
 	var n, r, e []int
 
@@ -273,6 +307,9 @@ func (s *SpeedbinbF) yt(t string) map[string][]int {
 	}
 }
 
+// SpeedbinbA is the tile-shuffle descramble prototype variant identified by
+// a numeric "<ndx>-<ndy>-<data>" table entry: mt is the encoder's tile
+// layout, wt is the decoder's (matching) layout.
 type SpeedbinbA struct {
 	mt, wt *Yt
 }
@@ -293,18 +330,24 @@ func NewSpeedbinbA(t, i string) *SpeedbinbA {
 	return sb
 }
 
+// vt reports whether both tile layouts parsed and are compatible.
 func (sb *SpeedbinbA) vt() bool {
 	return sb.mt != nil && sb.wt != nil
 }
 
+// bt reports whether image t is large enough to be tile-shuffled.
 func (sb *SpeedbinbA) bt(t image.Rectangle) bool {
 	return 64 <= t.Dx() && 64 <= t.Dy() && 102400 <= t.Dx()*t.Dy()
 }
 
+// dt: SpeedbinbA never trims bounds, unlike SpeedbinbF.
 func (sb *SpeedbinbA) dt(t image.Rectangle) image.Rectangle {
 	return t
 }
 
+// gt computes the per-tile source->destination copy regions that undo the
+// mt/wt tile shuffle, plus any leftover right/bottom strip outside the
+// tile grid.
 func (sb *SpeedbinbA) gt(t image.Rectangle) []DescrambleCord {
 	if !sb.vt() {
 		return nil
@@ -372,6 +415,8 @@ func (sb *SpeedbinbA) gt(t image.Rectangle) []DescrambleCord {
 	return rects
 }
 
+// yt parses a "<ndx>-<ndy>-<data>" tile layout string into a Yt, where each
+// pair of chars in data (decoded via Ot) is one tile's (x, y) grid position.
 func (sb *SpeedbinbA) yt(t string) *Yt {
 	if t == "" {
 		return nil
@@ -434,6 +479,7 @@ func (sb *SpeedbinbA) yt(t string) *Yt {
 	}
 }
 
+// Ot decodes a single base62-ish digit char (A-Z, a-z) into 0..51.
 func (sb *SpeedbinbA) Ot(t byte) int {
 	i := 0
 	n := strings.Index("ABCDEFGHIJKLMNOPQRSTUVWXYZ", string(t))
@@ -445,6 +491,9 @@ func (sb *SpeedbinbA) Ot(t byte) int {
 	return i + 2*n
 }
 
+// SpeedbinbH is the no-op prototype variant used when both the ctbl and
+// ptbl entries for an image are empty, meaning the image isn't scrambled at
+// all — gt returns a single identity copy region.
 type SpeedbinbH struct {
 	mt, wt *Yt
 }
@@ -456,18 +505,22 @@ func NewSpeedbinbH() *SpeedbinbH {
 	}
 }
 
+// vt: SpeedbinbH always "parses" successfully — there's nothing to parse.
 func (s SpeedbinbH) vt() bool {
 	return true
 }
 
+// bt: SpeedbinbH images are never treated as scrambled.
 func (s SpeedbinbH) bt(_ image.Rectangle) bool {
 	return false
 }
 
+// dt: no bounds change for an unscrambled image.
 func (s SpeedbinbH) dt(t image.Rectangle) image.Rectangle {
 	return t
 }
 
+// gt returns a single identity (no-op) copy region covering the whole image.
 func (s SpeedbinbH) gt(t image.Rectangle) []DescrambleCord {
 	return []DescrambleCord{{
 		XSrc:   0,

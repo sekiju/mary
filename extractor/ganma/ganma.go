@@ -1,11 +1,11 @@
 package ganma
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	json "github.com/bytedance/sonic"
 	util "github.com/sekiju/mdl/extractor/util"
-	"github.com/sekiju/mdl/internal/renamer"
 	"github.com/sekiju/mdl/sdk/manga"
 	"net/url"
 	"regexp"
@@ -14,19 +14,30 @@ import (
 )
 
 type Extractor struct {
-	settings *manga.Settings
+	util.Base
 }
 
 const (
 	sha256hash = "75f44fb799c1d505ae245b52633b59e3db9be1e2fe90b4c766eb5d96a86d5be7"
 )
 
-func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
-	if e.settings.Cookie == nil {
+func toChapter(storyID, title, magazineID string, number int, index uint) manga.Chapter {
+	return manga.Chapter{
+		ID:      storyID,
+		Number:  strconv.Itoa(number),
+		Title:   title,
+		Index:   index,
+		URL:     fmt.Sprintf("https://ganma.jp/web/reader/%s/%s/0", magazineID, storyID),
+		MangaID: magazineID,
+	}
+}
+
+func (e *Extractor) FindChapters(ctx context.Context, URL string) ([]*manga.Chapter, error) {
+	if e.Settings.Cookie == nil {
 		return nil, manga.ErrCredentialsRequired
 	}
 
-	res, err := resty.New().R().Get(URL)
+	res, err := resty.New().R().SetContext(ctx).Get(URL)
 	if err != nil {
 		return nil, err
 	}
@@ -38,8 +49,8 @@ func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
 		return nil, err
 	}
 
-	res, err = resty.New().R().
-		SetHeader("Cookie", *e.settings.Cookie).
+	res, err = resty.New().R().SetContext(ctx).
+		SetHeader("Cookie", *e.Settings.Cookie).
 		SetHeader("X-From", "https://reader.ganma.jp/api/").
 		Get(fmt.Sprintf("https://reader.ganma.jp/api/3.2/magazines/%s", mangaID))
 	if err != nil {
@@ -53,14 +64,8 @@ func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
 
 	chapters := make([]*manga.Chapter, len(magazine.Root.Items))
 	for i, item := range magazine.Root.Items {
-		chapters[i] = &manga.Chapter{
-			ID:      item.StoryId,
-			Number:  strconv.Itoa(item.Number),
-			Title:   item.Title,
-			Index:   uint(i),
-			URL:     fmt.Sprintf("https://ganma.jp/web/reader/%s/%s/0", magazine.Root.Id, item.StoryId),
-			MangaID: magazine.Root.Id,
-		}
+		chapter := toChapter(item.StoryId, item.Title, magazine.Root.Id, item.Number, uint(i))
+		chapters[i] = &chapter
 	}
 
 	return chapters, nil
@@ -68,13 +73,13 @@ func (e *Extractor) FindChapters(URL string) ([]*manga.Chapter, error) {
 
 var re = regexp.MustCompile(`https://ganma.jp/web/reader/([a-zA-Z0-9_-]*)/([a-zA-Z0-9_-]*)`)
 
-func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
+func (e *Extractor) FindChapter(ctx context.Context, URL string) (*manga.Chapter, error) {
 	matches := re.FindStringSubmatch(URL)
 	if len(matches) != 3 {
 		return nil, manga.ErrInvalidURLFormat
 	}
 
-	if e.settings.Cookie == nil {
+	if e.Settings.Cookie == nil {
 		return nil, manga.ErrCredentialsRequired
 	}
 
@@ -82,7 +87,7 @@ func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
 	if util.IsValidUUID(matches[1]) {
 		mangaID = matches[1]
 	} else {
-		res, err := resty.New().R().Get(URL)
+		res, err := resty.New().R().SetContext(ctx).Get(URL)
 		if err != nil {
 			return nil, err
 		}
@@ -95,8 +100,8 @@ func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
 		}
 	}
 
-	res, err := resty.New().R().
-		SetHeader("Cookie", *e.settings.Cookie).
+	res, err := resty.New().R().SetContext(ctx).
+		SetHeader("Cookie", *e.Settings.Cookie).
 		SetHeader("X-From", "https://reader.ganma.jp/api/").
 		Get(fmt.Sprintf("https://reader.ganma.jp/api/3.2/magazines/%s", mangaID))
 	if err != nil {
@@ -110,23 +115,17 @@ func (e *Extractor) FindChapter(URL string) (*manga.Chapter, error) {
 
 	for _, item := range magazine.Root.Items {
 		if item.StoryId == matches[2] {
-			return &manga.Chapter{
-				ID:      item.StoryId,
-				Number:  strconv.Itoa(item.Number),
-				Title:   item.Title,
-				Index:   0,
-				URL:     fmt.Sprintf("https://ganma.jp/web/reader/%s/%s/0", magazine.Root.Id, item.StoryId),
-				MangaID: magazine.Root.Id,
-			}, nil
+			chapter := toChapter(item.StoryId, item.Title, magazine.Root.Id, item.Number, 0)
+			return &chapter, nil
 		}
 	}
 
 	return nil, manga.ErrChapterNotFound
 }
 
-func (e *Extractor) FindChapterPages(chapter *manga.Chapter) ([]*manga.Page, error) {
-	res, err := resty.New().R().
-		SetHeader("Cookie", *e.settings.Cookie).
+func (e *Extractor) FindChapterPages(ctx context.Context, chapter *manga.Chapter) ([]*manga.Page, error) {
+	res, err := resty.New().R().SetContext(ctx).
+		SetHeader("Cookie", *e.Settings.Cookie).
 		SetHeader("X-From", "https://reader.ganma.jp/api/").
 		Get(fmt.Sprintf(
 			"https://ganma.jp/api/graphql?operationName=MagazineStoryReaderQuery&variables=%s&extensions=%s",
@@ -148,22 +147,13 @@ func (e *Extractor) FindChapterPages(chapter *manga.Chapter) ([]*manga.Page, err
 		}
 	}
 
-	pages := make([]*manga.Page, reader.Data.Magazine.StoryContents.PageImages.PageCount)
-	padRenamer := renamer.New(reader.Data.Magazine.StoryContents.PageImages.PageCount)
-
-	for index := range reader.Data.Magazine.StoryContents.PageImages.PageCount {
-		pages[index] = &manga.Page{
+	return util.BuildPages(reader.Data.Magazine.StoryContents.PageImages.PageCount, ".jpeg", func(index int, filename string) (*manga.Page, error) {
+		return &manga.Page{
 			URL:      fmt.Sprintf("%s%d.jpg?%s&w=4000", reader.Data.Magazine.StoryContents.PageImages.PageImageBaseURL, index+1, reader.Data.Magazine.StoryContents.PageImages.PageImageSign),
-			Filename: padRenamer.Name(index, ".jpeg"),
+			Filename: filename,
 			Index:    uint(index),
-		}
-	}
-
-	return pages, nil
-}
-
-func (e *Extractor) SetSettings(settings manga.Settings) {
-	e.settings = &settings
+		}, nil
+	})
 }
 
 func (e *Extractor) GenerateCookie() (string, error) {
@@ -196,5 +186,5 @@ func (e *Extractor) GenerateCookie() (string, error) {
 }
 
 func New() (manga.Extractor, error) {
-	return &Extractor{settings: &manga.Settings{}}, nil
+	return &Extractor{Base: util.Base{Settings: &manga.Settings{}}}, nil
 }
