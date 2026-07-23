@@ -43,15 +43,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.25"
-
-      - name: Install changie
-        run: go install github.com/miniscruff/changie@latest
-
-      - name: Generate changelog
-        run: changie diff 1 > release-notes.md
+      - name: Extract release notes from CHANGELOG.md
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          awk -v ver="$VERSION" '
+            $0 ~ "^## " ver { found=1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
 
       - uses: actions/download-artifact@v5
         with:

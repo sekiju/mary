@@ -1,6 +1,9 @@
 # IDE's
 .idea/
 
+# Node
+node_modules/
+
 # Config
 *.hcl
 !example.config.hcl

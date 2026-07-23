@@ -1,10 +1,13 @@
-.PHONY: release-patch release-minor release-major
+.PHONY: release changeset changeset-version changeset-status
 
-release-patch:
-	./scripts/release.sh patch
+changeset:
+	npx changeset
 
-release-minor:
-	./scripts/release.sh minor
+changeset-version:
+	npx changeset version
 
-release-major:
-	./scripts/release.sh major
+changeset-status:
+	npx changeset status --since=origin/main
+
+release:
+	./scripts/release.sh
