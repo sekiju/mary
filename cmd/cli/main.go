@@ -98,12 +98,24 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	config.Load(parse())
+	configPath := parse()
+
+	isTUI := len(os.Args) == 1 && len(config.Params.Runtime.DownloadChapters) == 0
+
+	config.Load(configPath)
+
+	var statusMessages []string
 
 	if config.Params.File.Application.CheckUpdates {
-		if err := checkForUpdates(); err != nil {
+		if msg, err := checkForUpdates(); err != nil {
 			log.Warn().Err(err).Msg("Failed to check for updates, continuing")
+		} else if msg != "" {
+			statusMessages = append(statusMessages, msg)
 		}
+	}
+
+	if isTUI {
+		return tui.Run(ctx, stop, nil, version, statusMessages)
 	}
 
 	chapterURLs := getChapterURLs()
@@ -134,12 +146,7 @@ func run() error {
 				fmt.Println(chapter.ID, chapter.Title, chapter.URL)
 			}
 		}
-	} else if len(os.Args) == 1 {
-		// No subcommand/flags given: launch the interactive TUI.
-		return tui.Run(ctx, stop, chapterURLs)
 	} else {
-		// Default download mode
-
 		loader := downloader.NewDownloader(ctx)
 
 		for _, chapterURL := range chapterURLs {
@@ -152,17 +159,17 @@ func run() error {
 	return nil
 }
 
-func checkForUpdates() error {
+func checkForUpdates() (string, error) {
 	log.Trace().Msgf("Current version: %s | Checking for updates...", version)
 
 	res, err := resty.New().R().Get("https://api.github.com/repos/sekiju/mdl/tags")
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	var tags []map[string]interface{}
 	if err = json.Unmarshal(res.Bytes(), &tags); err != nil {
-		return err
+		return "", err
 	}
 
 	currentVersion := semver.MustParse(version)
@@ -180,12 +187,11 @@ func checkForUpdates() error {
 	}
 
 	if len(versions) == 0 {
-		return nil
+		return "", nil
 	}
 
 	sort.Sort(semver.Collection(versions))
 
-	log.Info().Msgf("New downloader version available: %s - download release from: https://github.com/sekiju/mdl/releases", versions[len(versions)-1].String())
-
-	return nil
+	msg := fmt.Sprintf("New version available: %s — https://github.com/sekiju/mdl/releases", versions[len(versions)-1].String())
+	return msg, nil
 }
