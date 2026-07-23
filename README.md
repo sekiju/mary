@@ -3,6 +3,9 @@
 > [!IMPORTANT]
 > The project is made for educational purposes. If you believe your rights are being violated, contact main contributor.
 
+`mdl` is a terminal manga downloader. Give it a chapter URL, it queues the
+download in an interactive TUI and saves the result in the folder.
+
 ## Getting started
 
 If you don't want to build the app yourself checkout the [releases page](https://github.com/knst0/mdl/releases).
@@ -10,41 +13,17 @@ If you don't want to build the app yourself checkout the [releases page](https:/
 ### Usage
 
 ```shell
-mdl [OPTIONS] chapterURL [chapterURLs...]
+mdl [OPTIONS] [chapterURL...]
 ```
 
-### Download example
-
-```shell
-mdl https://comic-ogyaaa.com/episode/4856001361536369722 https://comic-ogyaaa.com/episode/4856001361561258284
-```
+Running `mdl` with no arguments opens the TUI, where you can paste URLs,
+track progress, and manage settings interactively. Passing one or more
+chapter URLs on the command line opens the TUI with those chapters already
+queued.
 
 ### Available options
 
-- `--cookie (string)`: Provides the cookie string for the current session
-- `--config (string)`: Path to the configuration file. If empty, `MDL_CONFIG` env var is checked, then the OS default (`~/.config/mdl/config.json` on Linux, `%AppData%/mdl/config.json` on Windows, `~/Library/Application Support/mdl/config.json` on macOS).
-
-## Config
-
-The config file is JSON and lives in an OS-appropriate location. On first run, a default config is automatically generated. The format is documented by the JSON Schema at [`schema/config.schema.json`](schema/config.schema.json).
-
-Key settings:
-
-- `application.max_parallel_downloads` — concurrent page/image downloads (default `4`)
-- `application.max_parallel_chapters` — concurrent chapter downloads (default `1`)
-- `output.directory` — download output directory (default `downloads`)
-- `output.file_format` — output format: `auto`, `png`, `jpeg`, `avif`, or `webp`
-- `site.<hostname>.cookie` — per-site session cookie for authenticated access
-
-## Architecture
-
-Site extractors live under `extractor/` and implement `sdk/manga.Extractor`.
-They self-register via `extractor/registry.Register` in `init()` functions,
-so the core package never imports concrete extractor packages by name.
-Built-in extractors are wired in through blank imports in
-`extractor/builtin.go`.
-
-See [Writing a site extractor](docs/extractors.md) for a walkthrough.
+- `--config (string)`: Path to the configuration file. If empty, `MDL_CONFIG` env var is checked, then the OS default (`~/.config/mdl/config.json` on Linux, `%USERPROFILE%/mdl/config.json` on Windows, `~/Library/Application Support/mdl/config.json` on macOS).
 
 ## Development
 
@@ -56,7 +35,22 @@ go vet ./...
 go test ./...
 ```
 
+### Extractors
+
+Site extractors live under `extractor/` and implement `sdk/manga.Extractor`.
+They self-register via `extractor/registry.Register` in `init()` functions,
+so the core package never imports concrete extractor packages by name.
+Built-in extractors are wired in through blank imports in
+`extractor/builtin.go`.
+
+See [Writing a site extractor](docs/extractors.md) for a walkthrough.
+
 ### Releasing
 
-To cut a release, run `make release-patch` (or `-minor`/`-major`).
-This merges changesets, bumps the version, tags, and pushes.
+Changes are tracked with [changesets](https://github.com/changesets/changesets):
+run `npx changeset` (or `make changeset`) after a change that should be
+noted in the changelog.
+
+To cut a release, run `make release`. This runs the build/vet/test gate,
+consumes pending changesets into `CHANGELOG.md`, bumps the version in
+`package.json` and `cmd/cli/main.go`, then commits, tags, and pushes.
