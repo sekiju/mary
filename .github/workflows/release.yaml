@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: install deps
+        run: npm ci
+
+      - name: git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: version and changelog
+        run: npx changeset version
+
+      - name: commit version bump
+        id: commit
+        run: |
+          if git diff --quiet; then
+            echo "No changesets to release."
+            exit 1
+          fi
+          version=$(node -p "require('./package.json').version")
+          git add -A
+          git commit -m "chore(release): v${version}"
+          git tag "v${version}"
+          git push origin HEAD --tags
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: extract release notes
+        run: |
+          awk '/^## /{if (n++) exit} n' CHANGELOG.md | tail -n +2 > /tmp/release-notes.md
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --clean --release-notes /tmp/release-notes.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

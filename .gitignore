@@ -1,0 +1,21 @@
+# IDE's
+.idea/
+
+# Node
+node_modules/
+
+# Config
+*.hcl
+!example.config.hcl
+
+# Temporary download directories
+downloads/
+temporary/
+
+# Build
+dist/
+whats-new.md
+generate-release-notes
+
+# Agents
+.claude/

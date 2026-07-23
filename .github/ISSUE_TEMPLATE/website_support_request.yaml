@@ -1,0 +1,44 @@
+name: Website support request
+description: New website support request
+labels:
+  - website-support-request
+
+body:
+  - type: checkboxes
+    id: '1'
+    attributes:
+      label: Checklist
+      description: >-
+        Please check the following before submitting a feature request. If you
+        are unable to check all the boxes, please provide more information in the
+        description.
+      options:
+        - label: >-
+            I checked that this website has not been requested before
+          required: true
+
+  - type: input
+    id: '2'
+    attributes:
+      label: Chapter Page Link
+      description: Provide the link to the chapter page related to your request.
+      placeholder: 'https://example.com/chapter/1'
+    validations:
+      required: true
+
+  - type: input
+    id: '3'
+    attributes:
+      label: Reader Page Link
+      description: Provide the link to the reader page related to your request.
+      placeholder: 'https://example.com/reader/1'
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: '4'
+    attributes:
+      label: Is have authorization?
+      options:
+        - label: "Yes"
+          required: true

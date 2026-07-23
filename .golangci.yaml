@@ -1,0 +1,5 @@
+linters:
+  disable:
+    - goimports
+    - gofmt
+    - gci
