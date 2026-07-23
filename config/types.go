@@ -1,18 +1,22 @@
 package config
 
+const CurrentConfigVersion = 1
+
 type config struct {
 	File    FileConfig
 	Runtime RuntimeFlags
 }
 
-// FileConfig holds every setting unmarshaled from the config file via koanf.
+// FileConfig holds every setting persisted to the config file.
 type FileConfig struct {
-	Application application     `koanf:"application"`
-	Output      output          `koanf:"output"`
-	Sites       map[string]site `koanf:"site"`
+	Schema      string          `json:"$schema,omitempty"`
+	Version     int             `json:"version"`
+	Application application     `json:"application"`
+	Output      output          `json:"output"`
+	Sites       map[string]site `json:"site,omitempty"`
 }
 
-// RuntimeFlags holds CLI-only state populated from flags/args, never unmarshaled by koanf.
+// RuntimeFlags holds CLI-only state populated from flags/args, never persisted.
 type RuntimeFlags struct {
 	PrimaryCookie    *string
 	ListChaptersMode bool
@@ -20,19 +24,19 @@ type RuntimeFlags struct {
 }
 
 type application struct {
-	CheckUpdates         bool `koanf:"check_updates"`
-	MaxParallelDownloads int  `koanf:"max_parallel_downloads"`
-	MaxParallelChapters  int  `koanf:"max_parallel_chapters"`
+	CheckUpdates         bool `json:"check_updates"`
+	MaxParallelDownloads int  `json:"max_parallel_downloads"`
+	MaxParallelChapters  int  `json:"max_parallel_chapters"`
 }
 
 type output struct {
-	Directory    string           `koanf:"directory"`
-	CleanOnStart bool             `koanf:"clean_on_start"`
-	FileFormat   OutputFileFormat `koanf:"file_format"`
+	Directory    string           `json:"directory"`
+	CleanOnStart bool             `json:"clean_on_start"`
+	FileFormat   OutputFileFormat `json:"file_format"`
 }
 
 type site struct {
-	Cookie *string `koanf:"cookie"`
+	Cookie *string `json:"cookie,omitempty"`
 }
 
 type OutputFileFormat string

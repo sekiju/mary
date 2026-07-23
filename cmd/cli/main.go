@@ -63,7 +63,7 @@ func getChapterURLs() []string {
 func newFlagSet(name string) (fs *flag.FlagSet, primaryCookie, configPath *string) {
 	fs = flag.NewFlagSet(name, flag.ExitOnError)
 	primaryCookie = fs.String("cookie", "", "Cookie string for the current session")
-	configPath = fs.String("config", "config.hcl", "Path to the config file")
+	configPath = fs.String("config", "", "Path to the config file (empty = OS default)")
 	return fs, primaryCookie, configPath
 }
 
@@ -102,7 +102,9 @@ func run() error {
 
 	isTUI := len(os.Args) == 1 && len(config.Params.Runtime.DownloadChapters) == 0
 
-	config.Load(configPath)
+	if err := config.Load(configPath); err != nil {
+		return err
+	}
 
 	var statusMessages []string
 

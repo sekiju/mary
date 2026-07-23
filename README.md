@@ -22,11 +22,19 @@ mdl https://comic-ogyaaa.com/episode/4856001361536369722 https://comic-ogyaaa.co
 ### Available options
 
 - `--cookie (string)`: Provides the cookie string for the current session
-- `--config (string)`: Specifies the path to the configuration file (default: `config.hcl`)
+- `--config (string)`: Path to the configuration file. If empty, `MDL_CONFIG` env var is checked, then the OS default (`~/.config/mdl/config.json` on Linux, `%AppData%/mdl/config.json` on Windows, `~/Library/Application Support/mdl/config.json` on macOS).
 
 ## Config
 
-Refer to [example.config.hcl](example.config.hcl) for the default configuration settings.
+The config file is JSON and lives in an OS-appropriate location. On first run, a default config is automatically generated. The format is documented by the JSON Schema at [`schema/config.schema.json`](schema/config.schema.json).
+
+Key settings:
+
+- `application.max_parallel_downloads` — concurrent page/image downloads (default `4`)
+- `application.max_parallel_chapters` — concurrent chapter downloads (default `1`)
+- `output.directory` — download output directory (default `downloads`)
+- `output.file_format` — output format: `auto`, `png`, `jpeg`, `avif`, or `webp`
+- `site.<hostname>.cookie` — per-site session cookie for authenticated access
 
 ## Architecture
 
@@ -83,17 +91,16 @@ Steps:
 2. Click the Export button (located in the bottom-right corner).
 3. Select the Header string option.
 
-Now in clipboard you have Cookie Header string, paste it to config or use with `--cookie` CLI argument.
+You can then paste the cookie into the configuration file or provide it via the `--cookie` CLI argument.
 
-This copies the Cookie Header string to your clipboard. You can then paste it into the configuration file or provide it via the `--cookie`
-CLI argument or modify config file:
+In your config JSON:
 
-```hcl
-// ...previous config
-
-site {
-  "shonenjumpplus.com" {
-    cookie = "glsc=1hYa4GrNp2DndSNIShVyoDGP6MgDmaJhiX22C0X734hkzod56wsBN7Fy1S5ZBOQd"
+```json
+{
+  "site": {
+    "shonenjumpplus.com": {
+      "cookie": "glsc=1hYa4GrNp2DndSNIShVyoDGP6MgDmaJhiX22C0X734hkzod56wsBN7Fy1S5ZBOQd"
+    }
   }
 }
 ```
