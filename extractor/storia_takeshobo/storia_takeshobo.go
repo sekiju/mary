@@ -6,10 +6,10 @@ import (
 	"regexp"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/sekiju/mdl/extractor/registry"
-	"github.com/sekiju/mdl/extractor/template/speed_binb"
-	"github.com/sekiju/mdl/sdk/manga"
-	"github.com/sekiju/mdl/sdk/manga/pluginutil"
+	"github.com/knst0/mdl/extractor/registry"
+	"github.com/knst0/mdl/extractor/template/speed_binb"
+	"github.com/knst0/mdl/sdk/manga"
+	"github.com/knst0/mdl/sdk/manga/pluginutil"
 
 	"resty.dev/v3"
 )

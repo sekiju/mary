@@ -1,4 +1,4 @@
-module github.com/sekiju/mdl
+module github.com/knst0/mdl
 
 go 1.25.0
 

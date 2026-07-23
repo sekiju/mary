@@ -1,8 +1,8 @@
 package pluginutil
 
 import (
-	"github.com/sekiju/mdl/internal/renamer"
-	"github.com/sekiju/mdl/sdk/manga"
+	"github.com/knst0/mdl/internal/renamer"
+	"github.com/knst0/mdl/sdk/manga"
 )
 
 // BuildPages renames count pages with a shared renamer.Renamer and builds

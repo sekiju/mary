@@ -13,7 +13,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/sekiju/mdl/downloader"
+	"github.com/knst0/mdl/downloader"
 )
 
 type reporter struct {

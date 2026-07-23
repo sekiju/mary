@@ -30,9 +30,9 @@ package cmoa
 import (
  "context"
 
- "github.com/sekiju/mdl/extractor/registry"
- "github.com/sekiju/mdl/sdk/manga"
- "github.com/sekiju/mdl/sdk/manga/pluginutil"
+ "github.com/knst0/mdl/extractor/registry"
+ "github.com/knst0/mdl/sdk/manga"
+ "github.com/knst0/mdl/sdk/manga/pluginutil"
 
  "resty.dev/v3"
 )
@@ -168,7 +168,7 @@ return pluginutil.BuildPages(len(rawPages), ".jpg", func(i int, filename string)
 ## Registration
 
 ```go
-import "github.com/sekiju/mdl/extractor/registry"
+import "github.com/knst0/mdl/extractor/registry"
 
 func init() {
  registry.Register("www.example.com", registry.WithSession(New))
@@ -191,7 +191,7 @@ package main
 
 import (
  _ "your.module/path/extractor/mysite" // triggers init() → Register
- "github.com/sekiju/mdl/cmd/cli"
+ "github.com/knst0/mdl/cmd/cli"
 )
 
 func main() {
@@ -204,7 +204,7 @@ The built-in extractors are wired the same way — via blank imports in
 
 ## Versioning
 
-`sdk/manga` currently ships inside the main `github.com/sekiju/mdl`
+`sdk/manga` currently ships inside the main `github.com/knst0/mdl`
 module at whatever version the module is tagged. There is no
 independent versioning story yet (Changesets-style release tracking is
 planned — see Phase 4 item 4.3 of `REFACTOR_PLAN.md`). Until then,

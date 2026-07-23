@@ -1,7 +1,7 @@
 package util
 
 import (
-	"github.com/sekiju/mdl/sdk/manga"
+	"github.com/knst0/mdl/sdk/manga"
 	"resty.dev/v3"
 	"testing"
 )

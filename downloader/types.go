@@ -2,7 +2,7 @@ package downloader
 
 import (
 	"context"
-	"github.com/sekiju/mdl/sdk/manga"
+	"github.com/knst0/mdl/sdk/manga"
 	"sync"
 )
 

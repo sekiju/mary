@@ -5,7 +5,7 @@
 
 ## Getting started
 
-If you don't want to build the app yourself checkout the [releases page](https://github.com/sekiju/mdl/releases).
+If you don't want to build the app yourself checkout the [releases page](https://github.com/knst0/mdl/releases).
 
 ### Usage
 
@@ -38,27 +38,20 @@ Built-in extractors are wired in through blank imports in
 
 See [Writing a site extractor](docs/extractors.md) for a walkthrough.
 
-## Releasing
+## Development
+
+### Build
+
+```shell
+go build ./...
+go vet ./...
+go test ./...
+```
+
+### Releasing
 
 To cut a release, run `make release-patch` (or `-minor`/`-major`).
 This merges changesets, bumps the version, tags, and pushes.
-
-The changelog is managed by [Changie](https://github.com/miniscruff/changie).
-Each PR should include a changeset fragment in `.changes/unreleased/`.
-Create one with:
-
-```shell
-changie new
-```
-
-Or write a YAML fragment manually:
-
-```yaml
-kind: "Patch Changes"
-body: "Fix cookie parameter not loading from config.hcl"
-```
-
-Valid kinds: `Breaking`, `What's Changed`, `Minor Changes`, `Patch Changes`.
 
 ### Optimizing download threads for best performance
 

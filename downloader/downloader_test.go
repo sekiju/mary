@@ -3,7 +3,7 @@ package downloader
 import (
 	"testing"
 
-	"github.com/sekiju/mdl/config"
+	"github.com/knst0/mdl/config"
 )
 
 func TestChapterConcurrency_FallsBackToOneWhenUnset(t *testing.T) {

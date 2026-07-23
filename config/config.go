@@ -2,11 +2,12 @@ package config
 
 import (
 	"errors"
+	"os"
+
 	"github.com/knadh/koanf/parsers/hcl"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
 	"github.com/rs/zerolog/log"
-	"os"
 )
 
 var Params = config{

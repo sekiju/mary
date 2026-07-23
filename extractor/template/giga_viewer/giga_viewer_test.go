@@ -4,8 +4,8 @@ package giga_viewer
 
 import (
 	"context"
-	"github.com/sekiju/mdl/extractor/util"
-	"github.com/sekiju/mdl/sdk/manga"
+	"github.com/knst0/mdl/extractor/util"
+	"github.com/knst0/mdl/sdk/manga"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

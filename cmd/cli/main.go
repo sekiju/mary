@@ -7,15 +7,15 @@ import (
 	"fmt"
 	semver "github.com/Masterminds/semver/v3"
 	json "github.com/bytedance/sonic"
+	"github.com/knst0/mdl/config"
+	"github.com/knst0/mdl/constant"
+	"github.com/knst0/mdl/downloader"
+	"github.com/knst0/mdl/extractor"
+	"github.com/knst0/mdl/internal/tui"
+	"github.com/knst0/mdl/internal/util"
+	"github.com/knst0/mdl/sdk/manga"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/sekiju/mdl/config"
-	"github.com/sekiju/mdl/constant"
-	"github.com/sekiju/mdl/downloader"
-	"github.com/sekiju/mdl/extractor"
-	"github.com/sekiju/mdl/internal/tui"
-	"github.com/sekiju/mdl/internal/util"
-	"github.com/sekiju/mdl/sdk/manga"
 	"net/url"
 	"os"
 	"os/signal"
@@ -167,7 +167,7 @@ func checkForUpdates() (string, error) {
 
 	log.Trace().Msgf("Current version: %s | Checking for updates...", version)
 
-	res, err := resty.New().R().Get("https://api.github.com/repos/sekiju/mdl/tags")
+	res, err := resty.New().R().Get("https://api.github.com/repos/knst0/mdl/tags")
 	if err != nil {
 		return "", err
 	}
@@ -195,6 +195,6 @@ func checkForUpdates() (string, error) {
 
 	sort.Sort(semver.Collection(versions))
 
-	msg := fmt.Sprintf("New version available: %s — https://github.com/sekiju/mdl/releases", versions[len(versions)-1].String())
+	msg := fmt.Sprintf("New version available: %s — https://github.com/knst0/mdl/releases", versions[len(versions)-1].String())
 	return msg, nil
 }

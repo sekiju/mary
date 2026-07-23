@@ -3,9 +3,9 @@ package extractor
 import (
 	"fmt"
 
-	"github.com/sekiju/mdl/config"
-	"github.com/sekiju/mdl/extractor/registry"
-	"github.com/sekiju/mdl/sdk/manga"
+	"github.com/knst0/mdl/config"
+	"github.com/knst0/mdl/extractor/registry"
+	"github.com/knst0/mdl/sdk/manga"
 )
 
 // getSession matches hostname exactly against config.Params.File.Sites, with
