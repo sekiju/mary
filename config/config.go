@@ -79,6 +79,19 @@ func Load(explicitPath string) error {
 	return nil
 }
 
+// SetSiteCookie sets (or, if cookie is nil, clears) the stored cookie for
+// hostname in the in-memory config. Callers must call Save to persist it.
+func SetSiteCookie(hostname string, cookie *string) {
+	if Params.File.Sites == nil {
+		Params.File.Sites = make(map[string]Site)
+	}
+	if cookie == nil {
+		delete(Params.File.Sites, hostname)
+		return
+	}
+	Params.File.Sites[hostname] = Site{Cookie: cookie}
+}
+
 func Save(path string) error {
 	if path == "" {
 		resolved, err := DefaultConfigPath()

@@ -90,7 +90,7 @@ func TestSave_RoundTrip(t *testing.T) {
 			Directory:  "output-dir",
 			FileFormat: PngOutputFormat,
 		},
-		Sites: map[string]site{
+		Sites: map[string]Site{
 			"example.com": {Cookie: ptr("secret")},
 		},
 	}

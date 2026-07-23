@@ -9,7 +9,6 @@ import (
 	json "github.com/bytedance/sonic"
 	"github.com/knst0/mdl/config"
 	"github.com/knst0/mdl/constant"
-	"github.com/knst0/mdl/downloader"
 	"github.com/knst0/mdl/extractor"
 	"github.com/knst0/mdl/internal/tui"
 	"github.com/knst0/mdl/internal/util"
@@ -60,25 +59,24 @@ func getChapterURLs() []string {
 	return strings.Split(strings.TrimSpace(input), " ")
 }
 
-func newFlagSet(name string) (fs *flag.FlagSet, primaryCookie, configPath *string) {
+func newFlagSet(name string) (fs *flag.FlagSet, configPath *string) {
 	fs = flag.NewFlagSet(name, flag.ExitOnError)
-	primaryCookie = fs.String("cookie", "", "Cookie string for the current session")
 	configPath = fs.String("config", "", "Path to the config file (empty = OS default)")
-	return fs, primaryCookie, configPath
+	return fs, configPath
 }
 
 func parse() string {
 	var fs *flag.FlagSet
-	var primaryCookie, configPath *string
+	var configPath *string
 	var args []string
 
 	switch {
 	case len(os.Args) > 1 && os.Args[1] == "chapters":
 		config.Params.Runtime.ListChaptersMode = true
-		fs, primaryCookie, configPath = newFlagSet("chapters")
+		fs, configPath = newFlagSet("chapters")
 		args = os.Args[2:]
 	default:
-		fs, primaryCookie, configPath = newFlagSet(constant.MDL)
+		fs, configPath = newFlagSet(constant.MDL)
 		args = os.Args[1:]
 	}
 
@@ -87,9 +85,6 @@ func parse() string {
 	}
 
 	config.Params.Runtime.DownloadChapters = fs.Args()
-	if primaryCookie != nil && *primaryCookie != "" {
-		config.Params.Runtime.PrimaryCookie = primaryCookie
-	}
 
 	return *configPath
 }
@@ -99,8 +94,6 @@ func run() error {
 	defer stop()
 
 	configPath := parse()
-
-	isTUI := len(os.Args) == 1 && len(config.Params.Runtime.DownloadChapters) == 0
 
 	if err := config.Load(configPath); err != nil {
 		return err
@@ -116,13 +109,9 @@ func run() error {
 		}
 	}
 
-	if isTUI {
-		return tui.Run(ctx, stop, nil, version, statusMessages)
-	}
-
-	chapterURLs := getChapterURLs()
-
 	if config.Params.Runtime.ListChaptersMode {
+		chapterURLs := getChapterURLs()
+
 		for _, chapterURL := range chapterURLs {
 			parsedURL, err := url.Parse(chapterURL)
 			if err != nil {
@@ -148,17 +137,11 @@ func run() error {
 				fmt.Println(chapter.ID, chapter.Title, chapter.URL)
 			}
 		}
-	} else {
-		loader := downloader.NewDownloader(ctx)
 
-		for _, chapterURL := range chapterURLs {
-			loader.Queue(chapterURL)
-		}
-
-		loader.Stop()
+		return nil
 	}
 
-	return nil
+	return tui.Run(ctx, stop, config.Params.Runtime.DownloadChapters, version, statusMessages)
 }
 
 func checkForUpdates() (string, error) {

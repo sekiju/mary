@@ -13,12 +13,11 @@ type FileConfig struct {
 	Version     int             `json:"version"`
 	Application application     `json:"application"`
 	Output      output          `json:"output"`
-	Sites       map[string]site `json:"site,omitempty"`
+	Sites       map[string]Site `json:"site,omitempty"`
 }
 
 // RuntimeFlags holds CLI-only state populated from flags/args, never persisted.
 type RuntimeFlags struct {
-	PrimaryCookie    *string
 	ListChaptersMode bool
 	DownloadChapters []string
 }
@@ -35,7 +34,7 @@ type output struct {
 	FileFormat   OutputFileFormat `json:"file_format"`
 }
 
-type site struct {
+type Site struct {
 	Cookie *string `json:"cookie,omitempty"`
 }
 

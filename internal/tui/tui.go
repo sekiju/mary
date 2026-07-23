@@ -178,6 +178,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, m.handleInputKey(msg))
 		case modeQueue:
 			cmds = append(cmds, m.handleQueueKey(msg))
+		case modeSettings:
+			cmds = append(cmds, m.handleSettingsKey(msg))
 		}
 
 	case startedMsg:
@@ -236,6 +238,10 @@ func (m *model) handleInputKey(msg tea.KeyMsg) tea.Cmd {
 			go m.downloader.Stop()
 		}
 		return tea.Quit
+
+	case "ctrl+s":
+		m.enterSettings(modeInput)
+		return nil
 
 	case "enter":
 		raw := strings.TrimSpace(m.textInput.Value())
@@ -304,6 +310,9 @@ func (m *model) handleQueueKey(msg tea.KeyMsg) tea.Cmd {
 
 	case "o":
 		m.openChapterFolder()
+
+	case "ctrl+s":
+		m.enterSettings(modeQueue)
 	}
 
 	return nil
@@ -404,6 +413,8 @@ func (m *model) View() string {
 		return m.viewInput()
 	case modeQueue:
 		return m.viewQueue()
+	case modeSettings:
+		return m.viewSettings()
 	default:
 		return ""
 	}
@@ -423,7 +434,7 @@ func (m *model) viewInput() string {
 	b.WriteString("Enter one or more chapter URLs (space-separated):\n\n")
 	b.WriteString(m.textInput.View())
 	b.WriteString("\n\n")
-	b.WriteString(dimStyle.Render("enter: confirm • q/ctrl+c: quit"))
+	b.WriteString(dimStyle.Render("enter: confirm • ctrl+s: settings • q/ctrl+c: quit"))
 	return lipgloss.JoinVertical(lipgloss.Left,
 		lipgloss.NewStyle().Margin(1, 2).Render(b.String()),
 		m.statusBar(),
@@ -431,14 +442,17 @@ func (m *model) viewInput() string {
 }
 
 func (m *model) viewQueue() string {
+	m.viewport.Height = m.height - 5
 	content := m.buildContent()
 	m.viewport.SetContent(content)
 
+	indent := lipgloss.NewStyle().MarginLeft(2)
+
 	return lipgloss.JoinVertical(lipgloss.Left,
-		m.header(),
-		m.viewport.View(),
-		m.help.View(keys),
-		m.statusBar(),
+		"\n"+indent.Render(m.header()),
+		indent.Render(m.viewport.View()),
+		indent.Render(m.help.View(keys)),
+		indent.Render(m.statusBar()),
 	)
 }
 
@@ -451,6 +465,19 @@ func openFolder(path string) error {
 		cmd = exec.Command("open", path)
 	default:
 		cmd = exec.Command("xdg-open", path)
+	}
+	return cmd.Start()
+}
+
+func openURL(url string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
+	case "darwin":
+		cmd = exec.Command("open", url)
+	default:
+		cmd = exec.Command("xdg-open", url)
 	}
 	return cmd.Start()
 }

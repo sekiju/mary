@@ -13,9 +13,6 @@ import (
 // silently fall through to "unsupported website" in NewExtractor unless this
 // is revisited.
 func getSession(hostname string) *string {
-	if config.Params.Runtime.PrimaryCookie != nil {
-		return config.Params.Runtime.PrimaryCookie
-	}
 	if site, exists := config.Params.File.Sites[hostname]; exists && site.Cookie != nil {
 		return site.Cookie
 	}

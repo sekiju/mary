@@ -18,6 +18,7 @@ type mode int
 const (
 	modeInput mode = iota
 	modeQueue
+	modeSettings
 )
 
 type chapterState struct {
@@ -76,6 +77,12 @@ type model struct {
 	selected int
 	total    int
 	finished int
+
+	settingsRows       []settingsRow
+	settingsSelected   int
+	settingsEditing    bool
+	settingsSaved      string
+	settingsReturnMode mode
 
 	width  int
 	height int

@@ -5,9 +5,10 @@ package registry
 
 import (
 	"fmt"
+	"sort"
 
-	"github.com/rs/zerolog/log"
 	"github.com/knst0/mdl/sdk/manga"
+	"github.com/rs/zerolog/log"
 )
 
 type Factory func(cookie *string) (manga.Extractor, error)
@@ -27,6 +28,16 @@ func Register(hostname string, factory Factory) {
 func Lookup(hostname string) (Factory, bool) {
 	f, ok := domainRegistry[hostname]
 	return f, ok
+}
+
+// Hostnames returns all registered hostnames, sorted.
+func Hostnames() []string {
+	hosts := make([]string, 0, len(domainRegistry))
+	for h := range domainRegistry {
+		hosts = append(hosts, h)
+	}
+	sort.Strings(hosts)
+	return hosts
 }
 
 func WithSession(fn func() (manga.Extractor, error)) Factory {
