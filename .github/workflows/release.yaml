@@ -1,63 +1,60 @@
 name: Release
 
 on:
-  push:
-    tags: ["v*"]
+  workflow_dispatch: {}
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        goos: [linux, darwin, windows]
-        goarch: [amd64, arm64]
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.25"
-
-      - name: Build
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-        run: |
-          VERSION="${GITHUB_REF#refs/tags/v}"
-          EXT=""
-          if [ "$GOOS" = "windows" ]; then EXT=".exe"; fi
-          go build -ldflags "-X main.version=$VERSION" \
-            -o "dist/mdl-${GOOS}-${GOARCH}${EXT}" \
-            ./cmd/cli/
-
-      - uses: actions/upload-artifact@v5
-        with:
-          name: mdl-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: dist/
-
   release:
-    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
-      - name: Extract release notes from CHANGELOG.md
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: install deps
+        run: npm ci
+
+      - name: git identity
         run: |
-          VERSION="${GITHUB_REF#refs/tags/v}"
-          awk -v ver="$VERSION" '
-            $0 ~ "^## " ver { found=1; next }
-            found && /^## / { exit }
-            found { print }
-          ' CHANGELOG.md > release-notes.md
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - uses: actions/download-artifact@v5
-        with:
-          path: dist/
-          merge-multiple: true
+      - name: version and changelog
+        run: npx changeset version
 
-      - uses: softprops/action-gh-release@v2
+      - name: commit version bump
+        id: commit
+        run: |
+          if git diff --quiet; then
+            echo "No changesets to release."
+            exit 1
+          fi
+          version=$(node -p "require('./package.json').version")
+          git add -A
+          git commit -m "chore(release): v${version}"
+          git tag "v${version}"
+          git push origin HEAD --tags
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: extract release notes
+        run: |
+          awk '/^## /{if (n++) exit} n' CHANGELOG.md | tail -n +2 > /tmp/release-notes.md
+
+      - uses: actions/setup-go@v7
         with:
-          body_path: release-notes.md
-          files: dist/*
+          go-version-file: go.mod
+
+      - uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --clean --release-notes /tmp/release-notes.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -30,6 +30,4 @@ archives:
       - none*
 
 release:
-  draft: true
-  replace_existing_draft: true
-  name_template: "v{{.Version}}"
+  draft: false
