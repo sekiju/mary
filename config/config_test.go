@@ -11,13 +11,11 @@ func TestLoad_UnmarshalsJSONFileConfig(t *testing.T) {
 	path := filepath.Join(dir, "config.json")
 	content := `{
   "version": 1,
-  "application": {
-    "check_updates": false,
-    "max_parallel_downloads": 7,
-    "max_parallel_chapters": 3
-  },
-  "output": {
-    "directory": "custom-dir"
+  "settings": {
+    "checkForUpdates": false,
+    "maxParallelPageFetches": 7,
+    "maxParallelChaptersDownload": 3,
+    "outputDirectory": "custom-dir"
   }
 }`
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
@@ -30,14 +28,14 @@ func TestLoad_UnmarshalsJSONFileConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if Params.File.Application.MaxParallelDownloads != 7 {
-		t.Errorf("MaxParallelDownloads = %d, want 7", Params.File.Application.MaxParallelDownloads)
+	if Params.File.Settings.MaxParallelPageFetches != 7 {
+		t.Errorf("MaxParallelPageFetches = %d, want 7", Params.File.Settings.MaxParallelPageFetches)
 	}
-	if Params.File.Application.MaxParallelChapters != 3 {
-		t.Errorf("MaxParallelChapters = %d, want 3", Params.File.Application.MaxParallelChapters)
+	if Params.File.Settings.MaxParallelChaptersDownload != 3 {
+		t.Errorf("MaxParallelChaptersDownload = %d, want 3", Params.File.Settings.MaxParallelChaptersDownload)
 	}
-	if Params.File.Output.Directory != "custom-dir" {
-		t.Errorf("Output.Directory = %q, want %q", Params.File.Output.Directory, "custom-dir")
+	if Params.File.Settings.OutputDirectory != "custom-dir" {
+		t.Errorf("OutputDirectory = %q, want %q", Params.File.Settings.OutputDirectory, "custom-dir")
 	}
 	if !Params.Runtime.ListChaptersMode {
 		t.Error("Runtime.ListChaptersMode was reset by Load, but Load must not touch RuntimeFlags")
@@ -47,13 +45,10 @@ func TestLoad_UnmarshalsJSONFileConfig(t *testing.T) {
 func TestLoad_MissingFileGeneratesDefaults(t *testing.T) {
 	defaults := FileConfig{
 		Version: CurrentConfigVersion,
-		Application: application{
-			CheckUpdates:         true,
-			MaxParallelDownloads: 4,
-		},
-		Output: output{
-			Directory:  "downloads",
-			FileFormat: AutoOutputFormat,
+		Settings: settings{
+			CheckForUpdates:        true,
+			MaxParallelPageFetches: 4,
+			OutputDirectory:        "downloads",
 		},
 	}
 	Params.File = defaults
@@ -63,11 +58,11 @@ func TestLoad_MissingFileGeneratesDefaults(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if Params.File.Application.MaxParallelDownloads != 4 {
-		t.Errorf("MaxParallelDownloads = %d, want default 4", Params.File.Application.MaxParallelDownloads)
+	if Params.File.Settings.MaxParallelPageFetches != 4 {
+		t.Errorf("MaxParallelPageFetches = %d, want default 4", Params.File.Settings.MaxParallelPageFetches)
 	}
-	if Params.File.Output.Directory != "downloads" {
-		t.Errorf("Output.Directory = %q, want default %q", Params.File.Output.Directory, "downloads")
+	if Params.File.Settings.OutputDirectory != "downloads" {
+		t.Errorf("OutputDirectory = %q, want default %q", Params.File.Settings.OutputDirectory, "downloads")
 	}
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -81,14 +76,11 @@ func TestSave_RoundTrip(t *testing.T) {
 
 	Params.File = FileConfig{
 		Version: CurrentConfigVersion,
-		Application: application{
-			CheckUpdates:         false,
-			MaxParallelDownloads: 8,
-			MaxParallelChapters:  2,
-		},
-		Output: output{
-			Directory:  "output-dir",
-			FileFormat: PngOutputFormat,
+		Settings: settings{
+			CheckForUpdates:             false,
+			MaxParallelPageFetches:      8,
+			MaxParallelChaptersDownload: 2,
+			OutputDirectory:             "output-dir",
 		},
 		Sites: map[string]Site{
 			"example.com": {Cookie: ptr("secret")},
@@ -107,11 +99,11 @@ func TestSave_RoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if Params.File.Application.MaxParallelDownloads != 8 {
-		t.Errorf("MaxParallelDownloads = %d, want 8", Params.File.Application.MaxParallelDownloads)
+	if Params.File.Settings.MaxParallelPageFetches != 8 {
+		t.Errorf("MaxParallelPageFetches = %d, want 8", Params.File.Settings.MaxParallelPageFetches)
 	}
-	if Params.File.Output.FileFormat != PngOutputFormat {
-		t.Errorf("FileFormat = %q, want %q", Params.File.Output.FileFormat, PngOutputFormat)
+	if Params.File.Settings.OutputDirectory != "output-dir" {
+		t.Errorf("OutputDirectory = %q, want %q", Params.File.Settings.OutputDirectory, "output-dir")
 	}
 	if Params.File.Sites["example.com"].Cookie == nil || *Params.File.Sites["example.com"].Cookie != "secret" {
 		t.Error("Site cookie not round-tripped")

@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"net/url"
@@ -77,6 +78,28 @@ func parse() string {
 	return *configPath
 }
 
+// recoverFromInvalidConfig offers to overwrite an unparsable config file with
+// defaults. loadErr must be the error returned by config.Load(configPath).
+func recoverFromInvalidConfig(configPath string, loadErr error) error {
+	var invalidErr *config.InvalidConfigError
+	if !errors.As(loadErr, &invalidErr) {
+		return loadErr
+	}
+
+	overwrite, confirmErr := tui.Confirm(fmt.Sprintf("%s\n\nThe file exists but could not be parsed.", invalidErr.Error()))
+	if confirmErr != nil {
+		return confirmErr
+	}
+	if !overwrite {
+		return loadErr
+	}
+
+	if err := config.Save(invalidErr.Path); err != nil {
+		return fmt.Errorf("write default config: %w", err)
+	}
+	return config.Load(configPath)
+}
+
 func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
@@ -84,12 +107,14 @@ func run() error {
 	configPath := parse()
 
 	if err := config.Load(configPath); err != nil {
-		return err
+		if err := recoverFromInvalidConfig(configPath, err); err != nil {
+			return err
+		}
 	}
 
 	var statusMessages []string
 
-	if config.Params.File.Application.CheckUpdates {
+	if config.Params.File.Settings.CheckForUpdates {
 		if msg, err := checkForUpdates(); err != nil {
 			statusMessages = append(statusMessages, fmt.Sprintf("failed to check for updates: %s", err.Error()))
 		} else if msg != "" {

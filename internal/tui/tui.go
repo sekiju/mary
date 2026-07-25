@@ -371,7 +371,7 @@ func (m *model) renderDetail() string {
 	}
 	b.WriteString(fmt.Sprintf("Name:     %s\n", label))
 	b.WriteString(fmt.Sprintf("URL:      %s\n", s.url))
-	b.WriteString(fmt.Sprintf("Folder:   %s\n", filepath.Join(config.Params.File.Output.Directory, s.chapterID)))
+	b.WriteString(fmt.Sprintf("Folder:   %s\n", filepath.Join(config.Params.File.Settings.OutputDirectory, s.chapterID)))
 	b.WriteString(fmt.Sprintf("Pages:    %d/%d (%d failed)\n", s.donePages, s.totalPages, s.failedPages))
 	if s.done {
 		b.WriteString(fmt.Sprintf("Duration: %s\n", s.duration.Round(time.Millisecond)))
@@ -490,7 +490,7 @@ func (m *model) openChapterFolder() {
 	if s == nil || s.chapterID == "" {
 		return
 	}
-	folder := filepath.Join(config.Params.File.Output.Directory, s.chapterID)
+	folder := filepath.Join(config.Params.File.Settings.OutputDirectory, s.chapterID)
 	_ = openFolder(folder)
 }
 

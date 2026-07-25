@@ -13,14 +13,12 @@ import (
 var Params = config{
 	File: FileConfig{
 		Version: CurrentConfigVersion,
-		Application: application{
-			CheckUpdates:         true,
-			MaxParallelDownloads: 4,
-		},
-		Output: output{
-			Directory:    "downloads",
-			CleanOnStart: false,
-			FileFormat:   AutoOutputFormat,
+		Settings: settings{
+			CheckForUpdates:             true,
+			AutoInstallUpdates:          true,
+			MaxParallelPageFetches:      4,
+			MaxParallelChaptersDownload: 1,
+			OutputDirectory:             "downloads",
 		},
 	},
 }
@@ -49,7 +47,7 @@ func Load(explicitPath string) error {
 
 	var raw map[string]any
 	if err := json.Unmarshal(data, &raw); err != nil {
-		return fmt.Errorf("parse config: %w", err)
+		return &InvalidConfigError{Path: path, Err: fmt.Errorf("parse config: %w", err)}
 	}
 
 	changed, err := RunMigrations(raw)
@@ -73,10 +71,25 @@ func Load(explicitPath string) error {
 
 	var fc FileConfig
 	if err := json.Unmarshal(data, &fc); err != nil {
-		return fmt.Errorf("unmarshal config: %w", err)
+		return &InvalidConfigError{Path: path, Err: fmt.Errorf("unmarshal config: %w", err)}
 	}
 	Params.File = fc
 	return nil
+}
+
+// InvalidConfigError indicates the config file at Path exists but could not be
+// parsed. Callers may offer to overwrite it with defaults via Save(Path).
+type InvalidConfigError struct {
+	Path string
+	Err  error
+}
+
+func (e *InvalidConfigError) Error() string {
+	return fmt.Sprintf("invalid config file %q: %s", e.Path, e.Err)
+}
+
+func (e *InvalidConfigError) Unwrap() error {
+	return e.Err
 }
 
 // SetSiteCookie sets (or, if cookie is nil, clears) the stored cookie for

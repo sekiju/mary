@@ -4,13 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/gen2brain/avif"
-	"github.com/gen2brain/webp"
-	"github.com/knst0/mdl/config"
 	"github.com/knst0/mdl/sdk/manga"
-	"image"
-	"image/jpeg"
-	"image/png"
 	"io"
 	"os"
 	"path/filepath"
@@ -53,35 +47,4 @@ func saveFile(dir, filename string, r io.Reader) error {
 
 	return nil
 
-}
-
-func generateFilename(originalName string, format config.OutputFileFormat) string {
-	return originalName[:1+len(originalName)-len(filepath.Ext(originalName))] + string(format)
-}
-
-func saveEncodedImage(dir, filename string, format config.OutputFileFormat, r io.Reader) error {
-	img, _, err := image.Decode(r)
-	if err != nil {
-		return fmt.Errorf("failed to decode image: %w", err)
-	}
-
-	filename = generateFilename(filename, format)
-	file, err := os.Create(filepath.Join(dir, filename))
-	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
-	}
-	defer file.Close()
-
-	switch format {
-	case config.JpegOutputFormat:
-		return jpeg.Encode(file, img, nil)
-	case config.PngOutputFormat:
-		return png.Encode(file, img)
-	case config.AvifOutputFormat:
-		return avif.Encode(file, img)
-	case config.WebpOutputFormat:
-		return webp.Encode(file, img)
-	default:
-		return fmt.Errorf("unsupported output format: %v", format)
-	}
 }

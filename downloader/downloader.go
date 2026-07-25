@@ -3,15 +3,16 @@ package downloader
 import (
 	"context"
 	"fmt"
-	"github.com/knst0/mdl/config"
-	"github.com/knst0/mdl/extractor"
-	"github.com/knst0/mdl/sdk/manga"
-	"github.com/rs/zerolog/log"
 	"net/url"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/knst0/mdl/config"
+	"github.com/knst0/mdl/extractor"
+	"github.com/knst0/mdl/sdk/manga"
+	"github.com/rs/zerolog/log"
 )
 
 func (d *Downloader) Queue(URL string) {
@@ -31,13 +32,7 @@ func (d *Downloader) Stop() {
 }
 
 func (d *Downloader) downloadImages(ctx context.Context, qi *queueInfo) error {
-	destination := filepath.Join(config.Params.File.Output.Directory, qi.ChapterID)
-
-	if _, err := os.Stat(destination); err == nil && config.Params.File.Output.CleanOnStart {
-		if err = os.RemoveAll(destination); err != nil {
-			return err
-		}
-	}
+	destination := filepath.Join(config.Params.File.Settings.OutputDirectory, qi.ChapterID)
 
 	if err := os.MkdirAll(destination, os.ModePerm); err != nil {
 		d.reporter.ChapterError(qi.URL, qi.ChapterID, "Failed to create download directory", err)
@@ -47,7 +42,7 @@ func (d *Downloader) downloadImages(ctx context.Context, qi *queueInfo) error {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	var failedPages int
-	semaphore := make(chan struct{}, config.Params.File.Application.MaxParallelDownloads)
+	semaphore := make(chan struct{}, config.Params.File.Settings.MaxParallelPageFetches)
 
 	for _, page := range qi.Pages {
 		semaphore <- struct{}{}
@@ -90,7 +85,7 @@ func (d *Downloader) downloadImages(ctx context.Context, qi *queueInfo) error {
 }
 
 func chapterConcurrency() int {
-	if n := config.Params.File.Application.MaxParallelChapters; n > 0 {
+	if n := config.Params.File.Settings.MaxParallelChaptersDownload; n > 0 {
 		return n
 	}
 	return 1
@@ -152,25 +147,13 @@ func (d *Downloader) run() {
 }
 
 func NewDownloader(ctx context.Context, reporter ...ProgressReporter) *Downloader {
-	var downloadFunc downloadPageFunc
-	if config.Params.File.Output.FileFormat == config.AutoOutputFormat {
-		downloadFunc = func(ctx context.Context, dir string, page *manga.Page) error {
-			r, err := getReader(ctx, page)
-			if err != nil {
-				return err
-			}
-
-			return saveFile(dir, page.Filename, r)
+	downloadFunc := func(ctx context.Context, dir string, page *manga.Page) error {
+		r, err := getReader(ctx, page)
+		if err != nil {
+			return err
 		}
-	} else {
-		downloadFunc = func(ctx context.Context, dir string, page *manga.Page) error {
-			r, err := getReader(ctx, page)
-			if err != nil {
-				return err
-			}
 
-			return saveEncodedImage(dir, page.Filename, config.Params.File.Output.FileFormat, r)
-		}
+		return saveFile(dir, page.Filename, r)
 	}
 
 	var r ProgressReporter = defaultProgressReporter{}

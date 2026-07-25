@@ -16,37 +16,27 @@
     "application": {
       "type": "object",
       "properties": {
-        "check_updates": {
+        "checkForUpdates": {
           "type": "boolean",
           "description": "Check for new mdl releases on startup"
         },
-        "max_parallel_downloads": {
+        "autoInstallUpdates": {
+          "type": "boolean",
+          "description": "Automatically install new mdl releases"
+        },
+        "maxParallelPageFetches": {
           "type": "integer",
           "minimum": 1,
           "description": "Maximum concurrent page/image downloads"
         },
-        "max_parallel_chapters": {
+        "maxParallelChaptersDownload": {
           "type": "integer",
           "minimum": 1,
           "description": "Maximum concurrent chapter downloads"
-        }
-      }
-    },
-    "output": {
-      "type": "object",
-      "properties": {
-        "directory": {
+        },
+        "outputDirectory": {
           "type": "string",
           "description": "Download output directory"
-        },
-        "clean_on_start": {
-          "type": "boolean",
-          "description": "Remove all files from the output directory on startup"
-        },
-        "file_format": {
-          "type": "string",
-          "enum": ["auto", "png", "jpeg", "avif", "webp"],
-          "description": "Output image format"
         }
       }
     },
