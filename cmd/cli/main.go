@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	semver "github.com/Masterminds/semver/v3"
+	"github.com/Masterminds/semver/v3"
 	json "github.com/bytedance/sonic"
 	"github.com/knst0/mdl/config"
 	"github.com/knst0/mdl/constant"
@@ -25,7 +25,14 @@ import (
 var version = "dev"
 
 func main() {
-	if err := run(); err != nil {
+	logFile, err := config.SetupLogging()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to set up logging")
+	}
+
+	defer logFile.Close()
+
+	if err = run(); err != nil {
 		os.Exit(1)
 	}
 }

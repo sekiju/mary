@@ -25,9 +25,17 @@ func DefaultConfigPath() (string, error) {
 	return filepath.Join(dir, "config.json"), nil
 }
 
-// ResolvePath returns the effective config path, handling flag and env overrides.
-// If explicitPath is non-empty, it is used verbatim (absolute or relative).
-// Otherwise MDL_CONFIG env var is checked, then the OS-specific default.
+func DefaultLogDir() (string, error) {
+	if runtime.GOOS == "windows" {
+		return filepath.Join(os.Getenv("USERPROFILE"), "mdl", "logs"), nil
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, "mdl", "logs"), nil
+}
+
 func ResolvePath(explicitPath string) (string, error) {
 	if explicitPath != "" {
 		return explicitPath, nil
