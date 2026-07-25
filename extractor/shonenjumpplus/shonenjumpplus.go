@@ -22,9 +22,6 @@ import (
 	"resty.dev/v3"
 )
 
-// iPhone UA avoids the puzzle-piece scrambling served to desktop browsers.
-const iPhoneUA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
-
 var httpClient = resty.New()
 
 type Extractor struct {
@@ -77,23 +74,16 @@ func (e *Extractor) FindChapterPages(ctx context.Context, chapter *manga.Chapter
 			Index:    uint(index),
 			URL:      pages[index].Src,
 			Filename: filename,
-			Headers:  map[string]string{"User-Agent": iPhoneUA},
 			Decode:   descramblePuzzleImage,
 		}, nil
 	})
 }
 
-// puzzleDivideNum and puzzleMultiple mirror the GigaViewer webpack bundle's
-// puzzle presenter (DIVIDE_NUM=4, MULTIPLE=8): each page image is split into
-// a 4x4 grid of 8px-aligned cells, then cells (row, col) and (col, row) are
-// swapped (a grid transpose) before being served to non-browser clients.
 const (
 	puzzleDivideNum = 4
 	puzzleMultiple  = 8
 )
 
-// descramblePuzzleImage undoes the GigaViewer puzzle scramble by transposing
-// the 4x4 cell grid back into place, then re-encodes as PNG.
 func descramblePuzzleImage(raw []byte) ([]byte, error) {
 	img, _, err := image.Decode(bytes.NewReader(raw))
 	if err != nil {
@@ -113,7 +103,7 @@ func descramblePuzzleImage(raw []byte) ([]byte, error) {
 		row, col := e/puzzleDivideNum, e%puzzleDivideNum
 		dstX, dstY := col*cellW, row*cellH
 
-		src := col*puzzleDivideNum + row // grid transpose
+		src := col*puzzleDivideNum + row
 		srcCol, srcRow := src%puzzleDivideNum, src/puzzleDivideNum
 		srcX, srcY := srcCol*cellW, srcRow*cellH
 
@@ -222,7 +212,7 @@ const episodeJSONID = `id="episode-json"`
 const episodeJSONIDAlt = `id='episode-json'`
 
 func (e *Extractor) fetchEpisodeJSON(ctx context.Context, URL string) (*episodeJSON, error) {
-	req := httpClient.R().SetContext(ctx).SetHeader("User-Agent", iPhoneUA)
+	req := httpClient.R().SetContext(ctx)
 	e.ApplyCookie(req)
 
 	res, err := req.Get(URL)
