@@ -28,6 +28,8 @@ jobs:
 
       - name: version and changelog
         run: npx changeset version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: commit version bump
         id: commit
